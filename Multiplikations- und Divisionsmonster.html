@@ -13857,7 +13857,7 @@ const TIERNAME = {common:'Gewöhnliche Kiste', rare:'Seltene Kiste', epic:'Episc
 const QR_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm9-2h3v3h-3zm4 0h3v2h-3zm-4 4h2v4h-2zm3 1h4v3h-4z"/></svg>';
 
 // ================= Spielstand =================
-const APP_VERSION = '1.2.0', APP_BUILD = '24.11.2026';
+const APP_VERSION = '1.3.0', APP_BUILD = '24.11.2026';
 const offlineReady = () => !!(navigator.serviceWorker && navigator.serviceWorker.controller);
 const PKEY = 'mm_player_v1', TKEY = 'mm_teacher_v1', PRKEY = 'mm_profiles_v1';
 function newPlayer(name, colorIdx){
@@ -13865,7 +13865,7 @@ function newPlayer(name, colorIdx){
   return {v:4, id:randomId(), name:name || '', rowBadges:{}, xp:0, totalCorrect:0, totalAnswered:0, rounds:0,
     stars:Array(NI).fill(0), best:Array(NI).fill(0), last:Array(NI).fill(0), pres:Array(NI).fill(0), adapt:{extra:0, calm:false, quiet:false}, lastPlay:0, lastBackup:0, coins:0, jokers:0, cards:[], cn:Array(CARDS.length).fill(0), card:-1, wbg:[-1, -1, -1, -1], splitter:0,
     fl:Array(NP).fill(0), fw:Array(NP).fill(0), fr:Array(NP).fill(0), teacherUnlock:-1,
-    own:STARTER.slice(), eq, newCos:[], pass:{s:0, pts:0, claimed:0}, code:'', passDay:{date:'', pts:0}, stats:{revenge:0, maxCombo:0, learn:0, train:0, lpt:0, days:0, missions:0, lastDay:-1}, ach:[], fd:Array(NP).fill(dayNum()), review:{date:'', done:false}, music:true,
+    own:STARTER.slice(), eq, newCos:[], pass:{s:0, pts:0, claimed:0}, code:'', cmdT:0, passDay:{date:'', pts:0}, stats:{revenge:0, maxCombo:0, learn:0, train:0, lpt:0, days:0, missions:0, lastDay:-1}, ach:[], fd:Array(NP).fill(dayNum()), review:{date:'', done:false}, music:true,
     daily:{date:'', rounds:0, done:false}, sound:true, seenHowto:false, lastPlayed:0};
 }
 function loadPlayer(){
@@ -14140,7 +14140,8 @@ async function teacherCreate(name, pw, size, level, takeLocal){
 async function wipeTeacher(){ try { if (cloudOn() && tAuth) await cPut('classes/' + tAuth.id, null); } catch(e){} store.del(TKEY); clearCred(); T = null; tAuth = null; tResultId = null; tTab = 'scan'; tScreen = 'login'; renderTeacher(); }
 function registerSnap(s){
   let st = T.students[s.id]; if (!st) st = T.students[s.id] = {id:s.id, name:s.name, firstSeen:Date.now(), counted:null};
-  st.name = s.name; st.latest = s; if (s.code) st.code = s.code; return st;
+  if (st.pendingName){ if (s.name === st.pendingName) st.pendingName = null; } else st.name = s.name;
+  st.latest = s; if (s.code) st.code = s.code; return st;
 }
 function parseCodesText(raw){ const set = new Set(); (String(raw).toUpperCase().match(/[A-HJ-NP-Z2-9]{4}-?[A-HJ-NP-Z2-9]{4}/g) || []).forEach(c => set.add(c.replace('-', ''))); return Array.from(set); }
 async function fetchKids(codes, label){
@@ -14151,7 +14152,7 @@ async function fetchKids(codes, label){
 }
 function cloudKidsHTML(){
   if (!cloudOn()) return '';
-  return '<section class="tcard"><h3>☁️ Kinder per Code</h3><p class="small">Jedes Kind hat einen 8-stelligen Code (Spiel → QR-Symbol oben rechts). Trage die Codes hier ein, dann wird der aktuelle Stand aus der Cloud geladen – ohne Scannen. Bekannte Kinder aktualisierst du mit einem Klick.</p><div class="tbtnrow"><button class="tbtn primary" data-t="addCodes">➕ Codes eintragen</button><button class="tbtn" data-t="refreshAll">🔄 Alle aktualisieren</button></div></section>';
+  return '<section class="tcard"><h3>☁️ Kinder per Code</h3><p class="small">Lege deine Kinder hier direkt an: Jedes bekommt einen 8-stelligen Code, mit dem es sich im Spiel anmeldet („Mit Code“). Kinder, die schon spielen, trägst du über ihren Code ein. Bekannte Kinder aktualisierst du mit einem Klick, ohne Scannen.</p><div class="tbtnrow"><button class="tbtn primary" data-t="createKids">🧒 Kinder anlegen</button><button class="tbtn" data-t="addCodes">➕ Vorhandene Codes eintragen</button><button class="tbtn" data-t="refreshAll">🔄 Alle aktualisieren</button><button class="tbtn" data-t="codeList">📋 Codeliste</button></div></section>';
 }
 function addCodesModal(){
   showModal('<h2>Codes eintragen</h2><p class="small">Ein Code pro Zeile oder durch Leerzeichen getrennt. Beispiel: K7M2-QX4P</p><textarea id="codesIn" class="tinput" rows="6" placeholder="K7M2-QX4P&#10;R5TN-8WLA"></textarea><div class="mbtns"><button class="btn ghost" data-m="close">Abbrechen</button><button class="btn" data-m="ok">Laden</button></div>',
@@ -14171,6 +14172,25 @@ function renderTeacherLogin(){
       + '<button class="tbtn primary big" data-t="loginDo">Anmelden</button><div class="obsep" style="color:#6b6391"><span>oder</span></div><button class="tbtn" data-t="showCreate">Neue Klasse anlegen</button>')
     + '<button class="tbtn ghost" data-t="toKids">Zur Spiel-Ansicht</button></div></div>';
   const pw = $('#liPw'); if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') teacherAction(mk ? 'createDo' : 'loginDo'); });
+}
+
+// ----- Nachrichten der Lehrkraft (Freischalten, Anpassungen, Namen) über die Cloud -----
+async function sendCmd(code, patch){
+  let cur = {}; try { cur = (await cGet('cmds/' + code)) || {}; } catch(e){}
+  await cPut('cmds/' + code, Object.assign({}, cur, patch, {t:Date.now()}));
+}
+let cmdLast = 0;
+async function checkCmds(force){
+  if (!cloudOn() || !P || !P.code) return;
+  if (!force && Date.now() - cmdLast < 30000) return; cmdLast = Date.now();
+  let c; try { c = await cGet('cmds/' + P.code); } catch(e){ return; }
+  if (!c || !c.t || c.t <= (P.cmdT || 0) || !P) return;
+  const msgs = [];
+  if (c.unlock != null && c.unlock >= 0 && c.unlock <= 3 && c.unlock > P.teacherUnlock){ P.teacherUnlock = c.unlock; msgs.push('🔓 ' + UNLOCK_NAMES[c.unlock] + ' freigeschaltet!'); }
+  if (c.name){ const n = trimName(c.name); if (n && n !== P.name){ P.name = n; msgs.push('Dein Name ist jetzt: ' + esc(n)); } }
+  if (c.adapt){ P.adapt = {extra:clamp(+c.adapt.extra || 0, 0, 300), calm:!!c.adapt.calm, quiet:!!c.adapt.quiet}; msgs.push('Deine Lehrkraft hat dein Spiel angepasst.'); }
+  P.cmdT = c.t; savePlayer(); applyBg();
+  if (msgs.length){ Sound.levelup(); toast(msgs.join('<br>')); ui.world = null; if (!R || R.ended) go('map'); }
 }
 
 function qrSVG(bytes){ const q = qrcode(0, 'M'); q.addData(String.fromCharCode.apply(null, bytes), 'Byte'); q.make(); return q.createSvgTag({cellSize:6, margin:24, scalable:true}); }
@@ -14416,7 +14436,7 @@ function cleanup(){
 function go(screen){
   cleanup(); window.scrollTo(0, 0); curBgWorld = -1;
   if (!P) return renderOnboarding();
-  ensureCode();
+  ensureCode(); checkCmds();
   ({map:renderMap, shop:renderShop, album:renderAlbum, monster:renderWardrobe, pass:renderPass, code:renderCode, settings:renderSettings}[screen] || renderMap)();
   applyBg();
 }
@@ -14941,7 +14961,7 @@ async function codeLogin(txt, m){
   if (!s){ Sound.err(); toast('Diesen Code kenne ich nicht. Prüfe ihn nochmal.'); return; }
   m.close(); Sound.beep();
   confirmModal('Spielstand von ' + esc(s.name) + ' laden?', 'Level ' + levelInfo(s.xp).level + ' · ★ ' + starsCount(s) + ' · ' + s.tc + ' Treffer<br><span class="hint">Stand vom ' + fmtDate(dayToDate(s.day)) + '</span>' + (P ? '<br><br>⚠️ Der jetzige Spielstand auf diesem Gerät wird ersetzt.' : ''), 'Laden', () => {
-    P = playerFromSnap(s, P); P.code = code; savePlayer(); cloudPush(true); ui.world = null; go('map'); confetti(80); toast('Spielstand geladen! 🎉');
+    P = playerFromSnap(s, P); P.code = code; if (!P.rounds) P.seenHowto = false; savePlayer(); cloudPush(true); ui.world = null; go('map'); confetti(80); toast('Spielstand geladen! 🎉');
   });
 }
 function kidAction(a, el){
@@ -15788,12 +15808,13 @@ function classTabHTML(){
   const rows = list.map(st => {
     const s = st.latest; const lw = !lastS ? '–' : lastS.scans[st.id] ? '<span class="pill ok">+' + lastS.scans[st.id].contrib + '</span>' : (lastS.missing || []).some(m => m.id === st.id) ? '<span class="pill miss">fehlte</span>' : '–';
     const isl = ISLANDS[frontierFor(s.stars, s.unlock)];
-    return '<tr class="click" data-t="student" data-id="' + st.id + '"><td><b>' + esc(st.name) + '</b>' + learnWarn(s) + '</td><td>' + levelInfo(s.xp).level + '</td><td>' + starsCount(s) + ' / ' + (NI * 3) + '</td><td>' + masteredCount(s) + ' / ' + NP + '</td><td>🏅 ' + rowsMastered(s.fl) + ' / ' + ROWS.length + '</td><td>' + WORLDS[isl.world].title + ' · ' + isl.label + '</td><td>' + s.tc + '</td><td>' + (s.ta ? Math.round(s.tc / s.ta * 100) + ' %' : '–') + '</td><td>' + learnPct(s) + '</td><td>' + lw + '</td><td>' + weekCell(lastS, st.id, 'days', ' Tage') + '</td><td>' + weekCell(lastS, st.id, 'missions', '') + '</td><td class="small">' + fmtDate(dayToDate(s.day)) + '</td></tr>';
+    return '<tr class="click" data-t="student" data-id="' + st.id + '"><td><b>' + esc(st.name) + '</b>' + learnWarn(s) + '</td><td style="font-family:ui-monospace,Menlo,monospace;font-weight:800">' + (st.code ? fmtCode(st.code) : '<span class="small">–</span>') + '</td><td>' + levelInfo(s.xp).level + '</td><td>' + starsCount(s) + ' / ' + (NI * 3) + '</td><td>' + masteredCount(s) + ' / ' + NP + '</td><td>🏅 ' + rowsMastered(s.fl) + ' / ' + ROWS.length + '</td><td>' + WORLDS[isl.world].title + ' · ' + isl.label + '</td><td>' + s.tc + '</td><td>' + (s.ta ? Math.round(s.tc / s.ta * 100) + ' %' : '–') + '</td><td>' + learnPct(s) + '</td><td>' + lw + '</td><td>' + weekCell(lastS, st.id, 'days', ' Tage') + '</td><td>' + weekCell(lastS, st.id, 'missions', '') + '</td><td class="small">' + fmtDate(dayToDate(s.day)) + '</td></tr>';
   }).join('');
-  return cloudKidsHTML() + inactiveHTML(list) + '<section class="tcard"><h3>' + list.length + (list.length === 1 ? ' Kind' : ' Kinder') + '</h3><p class="small">Tippe auf ein Kind für Details. „Sicher“ = Aufgabe schnell und richtig gelöst. „Spieltage“ und „Missionen“ beziehen sich auf die Woche vor dem letzten Scan (Tage mit mindestens einer Lern-Runde bzw. erfüllte Tagesmissionen). „Reihen“ = Reihen, die komplett sicher sitzen (2er bis 10er bis × 10). „Lern-Runden“ = Anteil der Runden mit neuen oder wackeligen Aufgaben (Rest: Runden mit Aufgaben, die das Kind schon sicher kann). ⚠️ = übt überwiegend schon Gekonntes. Stand = Datum des zuletzt eingelesenen Codes.</p><div class="tablewrap"><table class="ttable"><thead><tr><th>Name</th><th>Level</th><th>Sterne</th><th>Sicher</th><th>Reihen</th><th>Gerade bei</th><th>Treffer</th><th>Richtig</th><th>Lern-Runden</th><th>Letzte Woche</th><th>Spieltage</th><th>🎯 Missionen</th><th>Stand</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+  return cloudKidsHTML() + inactiveHTML(list) + '<section class="tcard"><h3>' + list.length + (list.length === 1 ? ' Kind' : ' Kinder') + '</h3><p class="small">Tippe auf ein Kind für Details. „Sicher“ = Aufgabe schnell und richtig gelöst. „Spieltage“ und „Missionen“ beziehen sich auf die Woche vor dem letzten Scan (Tage mit mindestens einer Lern-Runde bzw. erfüllte Tagesmissionen). „Reihen“ = Reihen, die komplett sicher sitzen (2er bis 10er bis × 10). „Lern-Runden“ = Anteil der Runden mit neuen oder wackeligen Aufgaben (Rest: Runden mit Aufgaben, die das Kind schon sicher kann). ⚠️ = übt überwiegend schon Gekonntes. Stand = Datum des zuletzt eingelesenen Codes.</p><div class="tablewrap"><table class="ttable"><thead><tr><th>Name</th><th>Code</th><th>Level</th><th>Sterne</th><th>Sicher</th><th>Reihen</th><th>Gerade bei</th><th>Treffer</th><th>Richtig</th><th>Lern-Runden</th><th>Letzte Woche</th><th>Spieltage</th><th>🎯 Missionen</th><th>Stand</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
 }
 function adaptForModal(id, shown){
   const st = T.students[id]; if (!st) return;
+  if (hasCloudKid(id)) return adaptCloudModal(id);
   const a = st.adapt || (st.adapt = Object.assign({extra:0, calm:false, quiet:false}, st.latest.adapt || {})), on = {}, opts = [0, 10, 20, 30, 45, 60];
   opts.forEach(v => { on['x' + v] = m => { a.extra = v; saveTeacher(); m.close(); adaptForModal(id); }; });
   on.calm = m => { a.calm = !a.calm; saveTeacher(); m.close(); adaptForModal(id); };
@@ -15806,10 +15827,10 @@ function adaptForModal(id, shown){
     + (shown ? '<div class="qrbig">' + qrSVG(encodeAdapt(id, a)) + '<p>' + (a.extra || a.calm || a.quiet ? [a.extra ? '+' + a.extra + ' s' : '', a.calm ? 'ruhiger Modus' : '', a.quiet ? 'weniger Effekte' : ''].filter(Boolean).join(' · ') : 'Alle Anpassungen aus') + ' für ' + esc(st.name) + '</p></div>' : '')
     + '<div class="mbtns"><button class="btn" data-m="show">Code zeigen</button><button class="btn ghost" data-m="close">Fertig</button></div>', {dismissable:true, on});
 }
-const CLASS_HEAD = ['Name', 'Spielernummer', 'Level', 'Sterne', 'Sicher', 'Reihen', 'Gerade bei', 'Treffer', 'Richtig', 'Runden', 'Zuletzt gespielt', 'Stand'];
+const CLASS_HEAD = ['Name', 'Code', 'Level', 'Sterne', 'Sicher', 'Reihen', 'Gerade bei', 'Treffer', 'Richtig', 'Runden', 'Zuletzt gespielt', 'Stand'];
 function classRows(){
   return studentsList().map(st => { const s = st.latest, isl = ISLANDS[frontierFor(s.stars, s.unlock)];
-    return [st.name, fmtNumber(st.id), levelInfo(s.xp).level, starsCount(s) + ' / ' + (NI * 3), masteredCount(s) + ' / ' + NP, rowsMastered(s.fl) + ' / ' + ROWS.length, WORLDS[isl.world].title + ' · ' + isl.label, s.tc, s.ta ? Math.round(s.tc / s.ta * 100) + ' %' : '', s.rounds, s.lastPlay ? fmtDate(dayToDate(s.lastPlay)) : '', fmtDate(dayToDate(s.day))]; });
+    return [st.name, st.code ? fmtCode(st.code) : '', levelInfo(s.xp).level, starsCount(s) + ' / ' + (NI * 3), masteredCount(s) + ' / ' + NP, rowsMastered(s.fl) + ' / ' + ROWS.length, WORLDS[isl.world].title + ' · ' + isl.label, s.tc, s.ta ? Math.round(s.tc / s.ta * 100) + ' %' : '', s.rounds, s.lastPlay ? fmtDate(dayToDate(s.lastPlay)) : '', fmtDate(dayToDate(s.day))]; });
 }
 function exportClassCsv(){
   const q = c => '"' + String(c).replace(/"/g, '""') + '"', csv = '\ufeff' + [CLASS_HEAD].concat(classRows()).map(r => r.map(q).join(';')).join('\r\n');
@@ -15832,11 +15853,14 @@ function inactiveHTML(list){
     + '<div class="tbtnrow"><button class="tbtn" data-t="exportCsv">Tabelle speichern (CSV)</button><button class="tbtn" data-t="printClass">Drucken</button></div></section>';
 }
 function restoreForModal(id){
-  const st = T.students[id]; if (!st) return; const bytes = encodeSave(playerFromSnap(st.latest, null));
+  const st = T.students[id]; if (!st) return;
+  if (hasCloudKid(id)) return codesListModal([{name:st.name, code:st.code}], 'Anmelde-Code');
+  const bytes = encodeSave(playerFromSnap(st.latest, null));
   showModal('<h2>Spielstand von ' + esc(st.name) + '</h2><p class="small">Stand vom ' + fmtDate(dayToDate(st.latest.day)) + '. Das Kind öffnet das Spiel, tippt auf „Ich habe schon einen Code“ und scannt diesen QR-Code (oder fügt den Text ein). So kommt es auf jedem Gerät zurück in seinen Spielstand.</p><div class="qrbig">' + qrSVG(bytes) + '</div><textarea class="codetext" readonly rows="3">' + codeText(bytes) + '</textarea><div class="mbtns"><button class="btn" data-m="close">Fertig</button></div>', {dismissable:true});
 }
 function renameForModal(id, shown){
   const st = T.students[id]; if (!st) return;
+  if (hasCloudKid(id)) return renameCloudModal(id);
   showModal('<h2>Namen ändern</h2><p class="small">Nur du als Lehrkraft kannst Namen ändern. Gib den neuen Namen ein, dann zeigst du dem Kind den Code. Das Kind scannt ihn im Spiel unter <b>⚙️ → „Code der Lehrkraft scannen“</b>.</p>'
     + '<input class="tinput" id="rnIn" maxlength="16" value="' + esc(st.name) + '" autocomplete="off">' + (shown ? '<div class="qrbig">' + qrSVG(encodeRename(id, st.name)) + '<p>Neuer Name: <b>' + esc(st.name) + '</b></p></div>' : '')
     + '<div class="mbtns"><button class="btn" data-m="go">Speichern und Code zeigen</button><button class="btn ghost" data-m="close">Fertig</button></div>',
@@ -15844,6 +15868,7 @@ function renameForModal(id, shown){
 }
 function unlockForModal(id, lv){
   const st = T.students[id]; if (!st) return;
+  if (hasCloudKid(id)) return unlockCloudModal(id);
   const on = {}; UNLOCK_NAMES.forEach((n, k) => { on['lv' + k] = m => { m.close(); unlockForModal(id, k); }; });
   showModal('<h2>🔓 Für ' + esc(st.name) + '</h2><p class="small">Wähle, bis zu welcher Welt ' + esc(st.name) + ' freigeschaltet wird. Das Kind scannt den Code im Spiel unter <b>⚙️ → „Code der Lehrkraft scannen“</b>. Der Code funktioniert nur auf dem Gerät von ' + esc(st.name) + '.</p><div class="tbtnrow">' + UNLOCK_NAMES.map((n, k) => '<button class="tbtn ' + (lv === k ? 'primary' : '') + '" data-m="lv' + k + '">' + n + '</button>').join('') + '</div>'
     + (lv != null ? '<div class="qrbig">' + qrSVG(encodeUnlockFor(lv, id)) + '<p><b>' + UNLOCK_NAMES[lv] + '</b> für ' + esc(st.name) + '</p></div>' : '') + '<div class="mbtns"><button class="btn" data-m="close">Fertig</button></div>', {dismissable:true, on});
@@ -15853,12 +15878,12 @@ function studentModal(id){
   const rows = OV_ROWS.map(n => { const f = rowFacts(n, 10), c = [0, 0, 0, 0]; f.forEach(x => c[s.fl[x]]++); const ans = s.fr ? f.reduce((a, x) => a + (s.fr[x] || 0) + ((s.fw && s.fw[x]) || 0), 0) : null; return '<div class="mrow"><span>' + n + '</span><div class="mbar">' + [3, 2, 1, 0].map(l => '<i class="c' + l + '" style="width:' + (c[l] / f.length * 100) + '%"></i>').join('') + '</div><em>' + (c[3] === f.length ? '🏅 sicher' : c[3] + '/' + f.length + ' sicher') + (ans != null ? ' · ' + ans + '× geübt' : '') + '</em></div>'; });
   const errs = s.errs.filter(e => e[0] < NP).map(([i, c]) => { const [a, b] = PAIRS[i]; return '<li><b>' + a + ' × ' + b + ' = ' + (a * b) + '</b><span class="small">' + c + '× falsch</span></li>'; }).join('');
   const isl = ISLANDS[frontierFor(s.stars, s.unlock)];
-  showModal('<h2>' + esc(st.name) + '</h2><p class="small">Spielernummer: <b>' + fmtNumber(id) + '</b></p><p class="small">Stand vom ' + fmtDate(dayToDate(s.day)) + ' · gerade bei ' + WORLDS[isl.world].title + ', ' + isl.label + '</p>'
+  showModal('<h2>' + esc(st.name) + '</h2><p class="small">' + (st.code ? 'Anmelde-Code: <b style="font-size:18px;letter-spacing:2px">' + fmtCode(st.code) + '</b>' : 'Noch kein Cloud-Code (das Kind hat die neue Version noch nicht geöffnet).') + '</p><p class="small">Stand vom ' + fmtDate(dayToDate(s.day)) + ' · gerade bei ' + WORLDS[isl.world].title + ', ' + isl.label + '</p>'
     + (lrTotal(s) ? '<p class="small">Lern-Runden: <b>' + s.stats.learn + '</b> · Trainings-Runden (nur schon Gekonntes): <b>' + s.stats.train + '</b>' + (learnWarn(s) ? ' · ⚠️ übt überwiegend schon Gekonntes – vielleicht auf Bonus-Inseln 🎫×2 oder die Tages-Wiederholung hinweisen.' : '') + '</p>' : '')
     + '<div class="sdgrid"><div><b>' + levelInfo(s.xp).level + '</b><span>Level</span></div><div><b>' + starsCount(s) + '</b><span>Sterne</span></div><div><b>' + masteredCount(s) + '</b><span>sichere Aufgaben</span></div><div><b>' + s.tc + '</b><span>Treffer</span></div><div><b>' + (s.ta ? Math.round(s.tc / s.ta * 100) + ' %' : '–') + '</b><span>richtig</span></div><div><b>' + s.rounds + '</b><span>Runden</span></div></div>'
     + '<h3>Reihen (jeweils × 1 bis × 10)</h3><div class="legend"><span><i class="c3"></i>sicher</span><span><i class="c2"></i>gut</span><span><i class="c1"></i>wackelig</span><span><i class="c0"></i>noch nicht geübt</span></div>' + rows.join('')
     + '<h3 style="margin-top:14px">Häufigste Fehler</h3>' + (errs ? '<ul class="errlist">' + errs + '</ul>' : '<p class="small">Keine Fehler gespeichert.</p>')
-    + '<div class="mbtns"><button class="btn" data-m="unlock">Welt freischalten</button><button class="btn" data-m="adapt">Anpassungen</button><button class="btn" data-m="rename">Namen ändern</button><button class="btn" data-m="restore">Spielstand wiederherstellen</button><button class="btn ghost" data-m="remove" style="color:#c62845">Aus der Liste entfernen</button><button class="btn" data-m="close">Schließen</button></div>',
+    + '<div class="mbtns"><button class="btn" data-m="unlock">Welt freischalten</button><button class="btn" data-m="adapt">Anpassungen</button><button class="btn" data-m="rename">Namen ändern</button><button class="btn" data-m="restore">' + (cloudOn() && st.code ? 'Code anzeigen' : 'Spielstand wiederherstellen') + '</button><button class="btn ghost" data-m="remove" style="color:#c62845">Aus der Liste entfernen</button><button class="btn" data-m="close">Schließen</button></div>',
     {dismissable:true, on:{adapt:m => { m.close(); adaptForModal(id); }, restore:m => { m.close(); restoreForModal(id); }, rename:m => { m.close(); renameForModal(id); }, unlock:m => { m.close(); unlockForModal(id); }, remove:m => { m.close(); confirmModal(esc(st.name) + ' entfernen?', 'Das Kind verschwindet aus der Klassenliste. Wird sein Code wieder eingelesen, erscheint es neu.', 'Entfernen', () => { delete T.students[id]; saveTeacher(); renderTeacher(); }, 'Abbrechen', true); }}});
 }
 
@@ -15932,7 +15957,74 @@ function errorsTabHTML(){
     + '<section class="tcard"><h3>Einmaleins-Karte der Klasse</h3><p class="small">Jedes Feld ist eine Aufgabe (Zeile × Spalte). Die Farbe zeigt den Durchschnitt der Kinder, die die Aufgabe schon geübt haben. Tippe auf ein Feld für Details.</p><div class="legend"><span><i class="c3"></i>sitzt</span><span><i class="c2"></i>meistens</span><span><i class="c1"></i>wackelt</span><span><i class="c0"></i>noch nicht geübt</span></div><div class="heat" id="heat">' + cells + '</div></section>'
     + '<section class="tcard"><h3>🏅 Reihen-Abzeichen in der Klasse</h3><p class="small">So viele Kinder können die jeweilige Reihe komplett sicher (von ' + list.length + ').</p><div class="rowcount">' + rowCount + '</div></section>';
 }
-function unlockTabHTML(){
+
+function createKidsModal(){
+  showModal('<h2>Kinder anlegen</h2><p class="small">Ein Name pro Zeile (Vorname oder Spitzname, höchstens 16 Zeichen). Jedes Kind bekommt einen 8-stelligen Code. Damit meldet es sich im Spiel unter „Mit Code“ an.</p><textarea id="kidsIn" class="tinput" rows="8" placeholder="Mia&#10;Ben&#10;Lena"></textarea><div class="mbtns"><button class="btn ghost" data-m="close">Abbrechen</button><button class="btn" data-m="ok">Anlegen</button></div>',
+    {on:{ok:m => { const names = $('#kidsIn', m.el).value.split(/\n+/).map(trimName).filter(Boolean); if (!names.length){ toast('Bitte mindestens einen Namen eingeben.'); return; } m.close(); toast('⏳ Lege ' + names.length + (names.length === 1 ? ' Kind' : ' Kinder') + ' an …'); createKids(names); }}});
+}
+async function createKids(names){
+  const made = []; let failed = false;
+  for (const name of names){
+    try {
+      let code = null;
+      for (let k = 0; k < 6 && !code; k++){ const c = newCode(); if ((await cGet('saves/' + c)) === null) code = c; }
+      if (!code){ failed = true; continue; }
+      const p = newPlayer(name); p.code = code;
+      const bytes = encodeSave(p);
+      await cPut('saves/' + code, {b:codeText(bytes), fr:Array(NP).fill(0), fw:Array(NP).fill(0), t:Date.now()});
+      const s = parseCode(bytes).data; s.code = code; registerSnap(s); made.push({name:s.name, code});
+    } catch(e){ failed = true; break; }
+  }
+  saveTeacher(); renderTeacher();
+  if (failed) toast('⚠️ Nicht alle Kinder konnten angelegt werden. Bitte Internet prüfen.');
+  if (made.length) codesListModal(made, 'Neue Kinder');
+}
+function codesListModal(list, title){
+  showModal('<h2>' + esc(title || 'Anmelde-Codes') + '</h2><p class="small">Gib jedem Kind seinen Code. Im Spiel: „Schon gespielt?“ → „Mit Code“.</p><div class="tablewrap"><table class="ttable"><thead><tr><th>Name</th><th>Code</th></tr></thead><tbody>'
+    + list.map(x => '<tr><td><b>' + esc(x.name) + '</b></td><td style="font-family:ui-monospace,Menlo,monospace;font-size:20px;font-weight:900;letter-spacing:2px">' + fmtCode(x.code) + '</td></tr>').join('') + '</tbody></table></div>'
+    + '<div class="mbtns"><button class="btn" data-m="print">🖨️ Drucken</button><button class="btn ghost" data-m="copy">Kopieren</button><button class="btn ghost" data-m="close">Schließen</button></div>',
+    {on:{print:() => printCodeList(list), copy:() => { const t = list.map(x => x.name + '\t' + fmtCode(x.code)).join('\n'); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => toast('Kopiert ✔'), () => toast('Kopieren nicht möglich.')); else toast('Kopieren nicht möglich.'); }}});
+}
+function printCodeList(list){
+  const box = document.createElement('div'); box.id = 'printarea';
+  box.innerHTML = '<h1>Anmelde-Codes' + (T && T.className ? ' – Klasse ' + esc(T.className) : '') + '</h1><p>Im Spiel: „Schon gespielt?“ → „Mit Code“. Den Code gut aufbewahren!</p><table><thead><tr><th>Name</th><th>Code</th></tr></thead><tbody>' + list.map(x => '<tr><td>' + esc(x.name) + '</td><td style="font-family:monospace;font-size:18px;letter-spacing:2px"><b>' + fmtCode(x.code) + '</b></td></tr>').join('') + '</tbody></table>';
+  document.body.appendChild(box); document.body.classList.add('printing');
+  const done = () => { document.body.classList.remove('printing'); box.remove(); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done); setTimeout(done, 120000); setTimeout(() => window.print(), 100);
+}
+const hasCloudKid = id => cloudOn() && T.students[id] && T.students[id].code;
+async function cmdSend(id, patch, okMsg){
+  const st = T.students[id];
+  try { await sendCmd(st.code, patch); saveTeacher(); toast(okMsg); return true; } catch(e){ toast('⚠️ Senden hat nicht geklappt. Bitte Internet prüfen.'); return false; }
+}
+function unlockCloudModal(id){
+  const st = T.students[id], u = st.latest ? st.latest.unlock : -1, on = {};
+  UNLOCK_NAMES.forEach((n, k) => { on['lv' + k] = async m => { m.close(); await cmdSend(id, {unlock:k}, '🔓 ' + UNLOCK_NAMES[k] + ' für ' + st.name + ' gesendet'); }; });
+  showModal('<h2>🔓 Welt freischalten für ' + esc(st.name) + '</h2><p class="small">Die Freischaltung wird direkt über die Cloud geschickt. Sobald das Kind das Spiel öffnet (mit Internet), ist die Welt frei. Kein Scannen nötig.</p><p class="small">Aktuell: <b>' + (u >= 0 ? UNLOCK_NAMES[u] : 'automatisch nach Sternen') + '</b></p><div class="tbtnrow">' + UNLOCK_NAMES.map((n, k) => '<button class="tbtn" data-m="lv' + k + '">' + n + '</button>').join('') + '</div><div class="mbtns"><button class="btn ghost" data-m="close">Schließen</button></div>', {dismissable:true, on});
+}
+function adaptCloudModal(id){
+  const st = T.students[id], a = st.adapt || (st.adapt = Object.assign({extra:0, calm:false, quiet:false}, (st.latest && st.latest.adapt) || {})), on = {}, opts = [0, 10, 20, 30, 45, 60];
+  opts.forEach(v => { on['x' + v] = m => { a.extra = v; saveTeacher(); m.close(); adaptCloudModal(id); }; });
+  on.calm = m => { a.calm = !a.calm; saveTeacher(); m.close(); adaptCloudModal(id); };
+  on.quiet = m => { a.quiet = !a.quiet; saveTeacher(); m.close(); adaptCloudModal(id); };
+  on.send = async m => { if (await cmdSend(id, {adapt:{extra:a.extra, calm:a.calm, quiet:a.quiet}}, '✔ Anpassungen für ' + st.name + ' gesendet')) m.close(); };
+  showModal('<h2>Anpassungen für ' + esc(st.name) + '</h2><p class="small">Wähle aus und tippe auf „Senden“. Die Anpassungen gelten, sobald das Kind das Spiel öffnet.</p>'
+    + '<p class="small"><b>Zusatzzeit pro Runde</b></p><div class="tbtnrow">' + opts.map(v => '<button class="tbtn ' + (a.extra === v ? 'primary' : '') + '" data-m="x' + v + '">' + (v ? '+' + v + ' s' : 'keine') + '</button>').join('') + '</div>'
+    + '<p class="small"><b>Ruhiger Übungsmodus</b> – keine Zeitbegrenzung. Die Runde endet, sobald das Monster besiegt ist. Der Blitz-Stern und die epische Kiste entfallen.</p><div class="tbtnrow"><button class="tbtn ' + (a.calm ? 'primary' : '') + '" data-m="calm">' + (a.calm ? 'An' : 'Aus') + '</button></div>'
+    + '<p class="small"><b>Weniger Effekte und Musik</b></p><div class="tbtnrow"><button class="tbtn ' + (a.quiet ? 'primary' : '') + '" data-m="quiet">' + (a.quiet ? 'An' : 'Aus') + '</button></div>'
+    + '<div class="mbtns"><button class="btn" data-m="send">An ' + esc(st.name) + ' senden</button><button class="btn ghost" data-m="close">Schließen</button></div>', {dismissable:true, on});
+}
+function renameCloudModal(id){
+  const st = T.students[id];
+  showModal('<h2>Namen ändern</h2><p class="small">Nur du als Lehrkraft kannst Namen ändern. Der neue Name gilt, sobald das Kind das Spiel öffnet.</p><input class="tinput" id="rnIn" maxlength="16" value="' + esc(st.name) + '" autocomplete="off"><div class="mbtns"><button class="btn" data-m="go">Speichern und senden</button><button class="btn ghost" data-m="close">Abbrechen</button></div>',
+    {dismissable:true, on:{go:async m => { const n = trimName($('#rnIn', m.el).value); if (!n) return; st.name = n; st.pendingName = n; if (await cmdSend(id, {name:n}, '✔ Neuer Name für ' + n + ' gesendet')){ m.close(); renderTeacher(); } }}});
+}
+function unlockTabHTMLCloud(){
+  return '<section class="tcard"><h3>Welten freischalten</h3><p>Eine neue Welt öffnet sich von selbst, wenn ein Kind in der Welt davor auf jeder Insel alle 3 Sterne hat. Du kannst Welten früher freigeben:</p><ul class="tlist"><li><b>Für einzelne Kinder:</b> Tab „Klasse“ → Kind antippen → „Welt freischalten“.</li><li><b>Für die ganze Klasse:</b> hier unten. Alle Kinder mit Cloud-Code bekommen die Freischaltung, sobald sie das Spiel öffnen.</li></ul>'
+    + '<div class="tbtnrow">' + UNLOCK_NAMES.map((n, i) => '<button class="tbtn" data-t="unlockAll" data-l="' + i + '">' + n + '</button>').join('') + '</div><p class="small">Kinder ohne Cloud-Code (altes Spiel) erreichst du so nicht. Sie bekommen ihren Code, sobald sie die neue Version öffnen.</p></section>';
+}
+function unlockTabHTML(){ return cloudOn() ? unlockTabHTMLCloud() : unlockTabHTMLLegacy(); }
+function unlockTabHTMLLegacy(){
   return '<section class="tcard"><h3>Welten freischalten</h3><p>Eine neue Welt öffnet sich von selbst, wenn ein Kind in der Welt davor auf jeder Insel alle 3 Sterne hat. Du kannst Welten früher freigeben: <b>für die ganze Klasse</b> mit dem Code unten (die Kinder tippen im Spiel auf <b>⚙️ → „Code der Lehrkraft scannen“</b>) oder <b>für einzelne Kinder</b> (Tab „Klasse“ → Kind antippen → „Welt freischalten“).</p>'
     + '<div class="tbtnrow">' + UNLOCK_NAMES.map((n, i) => '<button class="tbtn ' + (tUnlockSel === i ? 'primary' : '') + '" data-t="unlockQR" data-l="' + i + '">' + n + '</button>').join('') + '</div>'
     + (tUnlockSel !== null ? '<div class="qrbig">' + qrSVG(encodeUnlock(tUnlockSel)) + '<p><b>' + UNLOCK_NAMES[tUnlockSel] + '</b> freischalten</p></div>' : '') + '</section>';
@@ -15975,6 +16067,10 @@ function teacherAction(t, el){
     case 'createDo': { const n = $('#liClass').value.trim(), p = $('#liPw').value, p2 = $('#liPw2').value; if (!n){ toast('Bitte einen Klassennamen eingeben.'); return; } if (p.length < 8){ toast('Das Passwort braucht mindestens 8 Zeichen.'); return; } if (p !== p2){ toast('Die Passwörter sind nicht gleich.'); return; } const lb = $('#suLevel .tbtn.primary'); toast('⏳ Lege Klasse an …'); teacherCreate(n, p, clamp(parseInt($('#suSize').value, 10) || 25, 1, 60), lb ? lb.dataset.l : 'leicht', !!($('#takeLocal') && $('#takeLocal').checked)); break; }
     case 'tLogout': clearCred(); T = null; tAuth = null; tScreen = 'login'; tAutoFailed = false; renderTeacher(); break;
     case 'addCodes': addCodesModal(); break;
+    case 'createKids': createKidsModal(); break;
+    case 'codeList': { const l = studentsList().filter(s => s.code).map(s => ({name:s.name, code:s.code})); if (!l.length){ toast('Noch kein Kind mit Code.'); return; } codesListModal(l, 'Anmelde-Codes der Klasse'); break; }
+    case 'unlockAll': { const lv = +el.dataset.l, list = studentsList().filter(s => s.code); if (!list.length){ toast('Noch kein Kind mit Cloud-Code.'); return; }
+      confirmModal(UNLOCK_NAMES[lv] + ' für die ganze Klasse?', list.length + (list.length === 1 ? ' Kind bekommt' : ' Kinder bekommen') + ' die Freischaltung, sobald sie das Spiel öffnen.', 'Freischalten', async () => { let ok = 0; for (const s of list){ try { await sendCmd(s.code, {unlock:lv}); ok++; } catch(e){} } toast('🔓 ' + ok + ' von ' + list.length + ' Kindern bekommen ' + UNLOCK_NAMES[lv]); }); break; }
     case 'refreshAll': { const c = studentsList().filter(s => s.code).map(s => s.code); if (!c.length){ toast('Noch kein Kind mit Code. Trage Codes ein oder lies Kinder einmal per Scan ein.'); return; } toast('⏳ Aktualisiere …'); fetchKids(c, 'aktualisiert'); break; }
     case 'loadAll': loadAllKids(); break;
     case 'tab': tTab = el.dataset.tab; renderTeacher(); break;
@@ -16026,6 +16122,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'Enter'){ e.preventDefault(); pressKey('ok'); }
 });
 window.addEventListener('hashchange', route);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkCmds(); });
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
 route();
 
