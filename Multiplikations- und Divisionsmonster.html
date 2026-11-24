@@ -757,8 +757,8 @@ body.teacher .modal .mbtns{justify-content:flex-end}
 @media (prefers-reduced-motion: reduce){.fback{animation:none}.rays{animation:none}}
 
 /* ===================== v4: Reihen-Abzeichen, 12×12 ===================== */
-.heat{grid-template-columns:30px repeat(12,minmax(0,1fr));max-width:560px}
-.mrow em{font-style:normal;width:84px;font-size:12px;color:#b07d00}
+.heat{grid-template-columns:30px repeat(10,minmax(0,1fr));max-width:560px}
+.mrow em{font-style:normal;min-width:84px;font-size:12px;color:#b07d00}
 .rowcount{display:flex;flex-wrap:wrap;gap:8px}
 .rowcount span{background:#f4f1ff;border-radius:10px;padding:6px 10px;font-weight:700}
 .rowmedal{width:110px;height:110px;margin:0 auto 6px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#ffffff,#c7d2e6 45%,#7f8ca6);box-shadow:0 0 0 6px #e8f0ff,0 0 0 10px #ff4fa3,0 0 30px rgba(255,255,255,.6);animation:medalin .7s cubic-bezier(.2,1.6,.4,1)}
@@ -900,6 +900,14 @@ body.teacher .modal .mbtns{justify-content:flex-end}
 @keyframes crownin{0%{transform:translate(-50%,-300px) rotate(-40deg);opacity:0}100%{transform:translateX(-50%) rotate(-8deg);opacity:1}}
 .champname{font-size:clamp(48px,8vw,104px) !important;background:linear-gradient(#fff7c0,#ffd23f 50%,#ff9f43);-webkit-background-clip:text;background-clip:text;color:transparent !important;text-shadow:none !important;filter:drop-shadow(0 6px 0 rgba(0,0,0,.35));animation:throb .8s infinite alternate}
 
+.bigcode b{font-size:40px;letter-spacing:4px}
+.qrbox.mini{width:min(60vw,260px);padding:6px}
+.ovcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0}
+.ovcards div{background:#f4f1ff;border-radius:14px;padding:12px}.ovcards b{display:block;font-size:20px}.ovcards span{font-size:12px;color:#6b6391;font-weight:800}
+.ovt td.ov{text-align:center;font-weight:800;font-size:13px;min-width:46px;border-radius:6px}
+.ov4{background:#2fbf71;color:#fff}.ov3{background:#b8ecce;color:#0f5f35}.ov2{background:#ffe9a8;color:#7a5600}.ov1{background:#ffc2cb;color:#a3203a}.ov0{background:#efedf6;color:#9a93bd}
+.ovleg{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;font-weight:800;color:#6b6391;margin:8px 0}.ovleg i{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;margin-right:5px}
+.ovt td.sticky,.ovt th.sticky{position:sticky;left:0;background:#fff}
 </style>
 </head>
 <body>
@@ -13413,14 +13421,15 @@ for (let w = 0; w < 4; w++){
     g.forEach(n => addIsl({world:w, row:n, mode:W_MODE[w], label:n + 'er-Reihe', sub:rowSub(w, n), facts:groupFacts([n], W_FROM[w], 10), get hp(){ return hpFor(W_HP[w]); }, boss:W_BOSS[w][n]}));
     // Wiederholungsinsel: diese Reihen und die der Insel davor, gemischt – mit Zwischenboss
     const rows = (gi ? GR[gi - 1] : []).concat(g);
-    addIsl({world:w, row:0, mix:true, rev:true, mode:W_MODE[w], label:'Wiederholung ' + (gi + 1), sub:'Reihen ' + listRows(rows) + ' gemischt · Zwischenboss', facts:groupFacts(rows, W_FROM[w], 10), get hp(){ return hpFor(W_HP[w] + 60); }, boss:W_REV[w][gi]});
+    addIsl({world:w, row:0, mix:true, rev:true, mode:W_MODE[w], label:'Wiederholung ' + (gi + 1), sub:'Reihen ' + listRows(rows) + ' gemischt · Zwischenboss', facts:groupFacts(rows, W_FROM[w], 10), big:true, timeBonus:15000, get hp(){ return hpFor(W_HP[w] + 30); }, boss:W_REV[w][gi]});
   });
-  addIsl({world:w, row:0, mix:true, mode:W_MODE[w], label:'Endboss', sub:'Alle Reihen 2 bis 10 gemischt', facts:groupFacts([2, 3, 4, 5, 6, 7, 8, 9, 10], W_FROM[w], 10), get hp(){ return hpFor(W_HP[w] + 160); }, boss:W_END[w]});
+  addIsl({world:w, row:0, mix:true, mode:W_MODE[w], label:'Endboss', sub:'Alle Reihen 2 bis 10 gemischt', facts:groupFacts([2, 3, 4, 5, 6, 7, 8, 9, 10], W_FROM[w], 10), big:true, timeBonus:30000, get hp(){ return hpFor(W_HP[w] + 80); }, boss:W_END[w]});
 }
 const NI = ISLANDS.length; // 52
 // Boss-Fähigkeiten: heal = heilt sich bei Fehlern, shield = Schild halbiert Schaden, bis 3 richtige in Folge
 const ABIL_PATS = {13:[0, 0, 0, 'shield', 'heal', 'shield', 'heal', 'both', 'shield', 'heal', 'shield', 'both', 'both'], 14:[0, 0, 0, 0, 'shield', 'heal', 'shield', 'heal', 'both', 'shield', 'heal', 'shield', 'both', 'both']};
 ISLANDS.forEach(i => { const ids = ISLANDS.filter(x => x.world === i.world), a = ABIL_PATS[ids.length][i.id - ids[0].id]; if (a) i.ability = a; });
+ISLANDS.forEach(i => { if (i.rev && i.ability === 'both') i.ability = 'shield'; });   // Zwischenbosse: nur Schild, keine Doppel-Fähigkeit
 const WORLD_START = [0, 1, 2, 3].map(w => ISLANDS.findIndex(i => i.world === w));
 const islandsOfWorld = w => ISLANDS.filter(i => i.world === w).map(i => i.id);
 
@@ -13848,7 +13857,7 @@ const TIERNAME = {common:'Gewöhnliche Kiste', rare:'Seltene Kiste', epic:'Episc
 const QR_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm9-2h3v3h-3zm4 0h3v2h-3zm-4 4h2v4h-2zm3 1h4v3h-4z"/></svg>';
 
 // ================= Spielstand =================
-const APP_VERSION = '1.1.0', APP_BUILD = '27.10.2026';
+const APP_VERSION = '1.2.0', APP_BUILD = '24.11.2026';
 const offlineReady = () => !!(navigator.serviceWorker && navigator.serviceWorker.controller);
 const PKEY = 'mm_player_v1', TKEY = 'mm_teacher_v1', PRKEY = 'mm_profiles_v1';
 function newPlayer(name, colorIdx){
@@ -13856,7 +13865,7 @@ function newPlayer(name, colorIdx){
   return {v:4, id:randomId(), name:name || '', rowBadges:{}, xp:0, totalCorrect:0, totalAnswered:0, rounds:0,
     stars:Array(NI).fill(0), best:Array(NI).fill(0), last:Array(NI).fill(0), pres:Array(NI).fill(0), adapt:{extra:0, calm:false, quiet:false}, lastPlay:0, lastBackup:0, coins:0, jokers:0, cards:[], cn:Array(CARDS.length).fill(0), card:-1, wbg:[-1, -1, -1, -1], splitter:0,
     fl:Array(NP).fill(0), fw:Array(NP).fill(0), fr:Array(NP).fill(0), teacherUnlock:-1,
-    own:STARTER.slice(), eq, newCos:[], pass:{s:0, pts:0, claimed:0}, passDay:{date:'', pts:0}, stats:{revenge:0, maxCombo:0, learn:0, train:0, lpt:0, days:0, missions:0, lastDay:-1}, ach:[], fd:Array(NP).fill(dayNum()), review:{date:'', done:false}, music:true,
+    own:STARTER.slice(), eq, newCos:[], pass:{s:0, pts:0, claimed:0}, code:'', passDay:{date:'', pts:0}, stats:{revenge:0, maxCombo:0, learn:0, train:0, lpt:0, days:0, missions:0, lastDay:-1}, ach:[], fd:Array(NP).fill(dayNum()), review:{date:'', done:false}, music:true,
     daily:{date:'', rounds:0, done:false}, sound:true, seenHowto:false, lastPlayed:0};
 }
 function loadPlayer(){
@@ -13887,7 +13896,7 @@ function loadPlayer(){
   return p;
 }
 let P = loadPlayer();
-function savePlayer(){ if (!P) return; if (!store.set(PKEY, P)) toast('⚠️ Speichern hat nicht geklappt.'); const pr = store.get(PRKEY, {}); pr[P.id] = P; store.set(PRKEY, pr); }
+function savePlayer(){ if (!P) return; if (!store.set(PKEY, P)) toast('⚠️ Speichern hat nicht geklappt.'); const pr = store.get(PRKEY, {}); pr[P.id] = P; store.set(PRKEY, pr); cloudPush(); }
 const owns = i => P.own.includes(i);
 function grantCos(i){ if (i == null || owns(i)) return false; P.own.push(i); P.own.sort((a, b) => a - b); if (!P.newCos.includes(i)) P.newCos.push(i); return true; }
 function syncLevelItems(){ const L = levelInfo(P.xp).level, got = []; COS.forEach((c, i) => { if (typeof c.src === 'number' && c.src <= L && grantCos(i)) got.push(i); }); return got; }
@@ -13914,7 +13923,7 @@ function frontierFor(stars, tu){ let last = 0; for (let i = 0; i < NI; i++){ if 
 const frontierIsland = () => frontierFor(P.stars, P.teacherUnlock);
 // ---- Reihen-Abzeichen: 1 = bis × 10 sicher, 2 = bis × 12 sicher (11er, 12er, 15er, 20er nur Stufe 2) ----
 function rowSure(fl, n, to){ return rowFacts(n, to).every(f => fl[f] === 3); }
-function rowLevelOf(fl, n){ return rowSure(fl, n, 12) ? 2 : (n <= 10 && rowSure(fl, n, 10)) ? 1 : 0; }
+function rowLevelOf(fl, n){ return rowSure(fl, n, 10) ? 1 : 0; }
 function currentRowBadges(fl){ const o = {}; ROWS.forEach(n => { const l = rowLevelOf(fl, n); if (l) o[n] = l; }); return o; }
 const rowsMastered = fl => ROWS.filter(n => rowLevelOf(fl, n) > 0).length;
 function rowProgress(fl, n){ const to = n <= 10 ? 10 : 12, f = rowFacts(n, to); return {sure:f.filter(x => fl[x] === 3).length, total:f.length}; }
@@ -13936,7 +13945,7 @@ function bonusIslands(){
 function weakFacts(){ const t = dayNum(), out = []; for (let i = 0; i < NP; i++){ const l = P.fl[i]; if (l === 1 || (l >= 2 && isDue(i, t))) out.push(i); } return out; }
 function reviewFacts(){ const t = dayNum(); return weakFacts().sort((a, b) => (P.fl[a] - P.fl[b]) || ((P.fd[a]) - (P.fd[b]))).slice(0, 24); }
 function ensureReview(){ const t = todayStr(); if (P.review.date !== t) P.review = {date:t, done:false}; }
-function reviewIsland(){ const f = reviewFacts(); return {id:-1, world:ISLANDS[frontierIsland()].world, row:0, label:'Tages-Wiederholung', sub:f.length + ' fällige Aufgaben', facts:f, hp:clamp(f.length * 14, 80, 240), mix:true, mode:'mul', review:true, boss:['🧠','Gedächtnis-Geist'], prev:-1}; }
+function reviewIsland(){ const f = reviewFacts(); return {id:-1, world:ISLANDS[frontierIsland()].world, row:0, label:'Tages-Wiederholung', sub:f.length + ' fällige Aufgaben', facts:f, hp:clamp(f.length * 9, 60, 160), big:true, timeBonus:15000, mix:true, mode:'mul', review:true, boss:['🧠','Gedächtnis-Geist'], prev:-1}; }
 const islandOf = id => id < 0 ? reviewIsland() : ISLANDS[id];
 const starsCount = s => s.stars.reduce((a, b) => a + popcount(b), 0);
 const masteredCount = s => s.fl.filter(l => l === 3).length;
@@ -14016,6 +14025,7 @@ function playerFromSnap(s, old){
   Object.assign(p, {id:s.id, xp:s.xp, totalCorrect:s.tc, totalAnswered:s.ta, rounds:s.rounds, stars:s.stars.slice(), best:s.best.slice(), last:s.best.slice(),
     pres:s.pres.slice(), adapt:Object.assign({}, s.adapt), lastPlay:s.lastPlay, coins:s.coins, jokers:s.jokers, cn:s.cn.slice(), cards:s.cn.map((v, i) => v >= cardNeed(i) ? i : -1).filter(i => i >= 0), card:(s.card >= 0 && s.cn[s.card] >= cardNeed(s.card)) ? s.card : -1, wbg:s.wbg.slice(), splitter:s.splitter, teacherUnlock:s.unlock, fl:s.fl.slice(), seenHowto:true});
   s.errs.forEach(([i, c]) => { if (i < NP) p.fw[i] = c; });
+  if (s.fr) p.fr = s.fr.slice(); if (s.fw) p.fw = s.fw.slice(); if (s.code) p.code = s.code;
   p.fd = Array(NP).fill(s.day); p.stats = Object.assign({lastDay:s.day}, s.stats);
   p.eq = Object.assign({}, DEFAULT_EQ, s.eq); p.own = Array.from(new Set(STARTER.concat(s.own))).sort((a, b) => a - b); p.pass = Object.assign({}, s.pass);
   p.rowBadges = currentRowBadges(p.fl);
@@ -14026,6 +14036,143 @@ function playerFromSnap(s, old){
 const CODE_VER = 11;
 const codeText = bytes => 'MM-' + b64url(bytes);
 function textToBytes(t){ const m = String(t || '').replace(/\s+/g, '').match(/MM-([A-Za-z0-9_-]+)/); if (!m) return null; try { return unb64url(m[1]); } catch(e){ return null; } }
+
+// ================= Cloud (Firebase Realtime Database über REST) =================
+// >>> HIER die Adresse deiner Firebase Realtime Database eintragen, z. B.
+// >>> 'https://mein-projekt-default-rtdb.europe-west1.firebasedatabase.app'
+const CLOUD_URL = 'https://mudi-monster-default-rtdb.europe-west1.firebasedatabase.app';
+const cloudOn = () => !!CLOUD_URL;
+const cUrl = p => CLOUD_URL.replace(/\/+$/, '') + '/' + p + '.json';
+async function cGet(p){ const r = await fetch(cUrl(p), {cache:'no-store'}); if (!r.ok) throw new Error('http' + r.status); return r.json(); }
+async function cPut(p, v){ const r = await fetch(cUrl(p), {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(v)}); if (!r.ok) throw new Error('http' + r.status); return true; }
+const CODE_ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // 32 Zeichen, ohne I, O, 0, 1
+function newCode(){ const a = new Uint8Array(8); crypto.getRandomValues(a); return Array.from(a, b => CODE_ALPHA[b % 32]).join(''); }
+const normCode = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const validCode = c => /^[A-HJ-NP-Z2-9]{8}$/.test(c);
+const fmtCode = c => c ? c.slice(0, 4) + '-' + c.slice(4) : '';
+const codeQrBytes = c => Array.from(new TextEncoder().encode('MMC-' + c));
+const cloudState = {ok:0, err:false};
+let cPushTimer = null, codeBusy = false;
+function cloudPush(now){ if (!cloudOn() || !P || !P.code) return; clearTimeout(cPushTimer); cPushTimer = setTimeout(doPush, now ? 0 : 2500); }
+async function doPush(){
+  if (!cloudOn() || !P || !P.code) return; const p = P;
+  try {
+    await cPut('saves/' + p.code, {b:codeText(encodeSave(p)), fr:p.fr.map(v => Math.min(65535, v)), fw:p.fw.map(v => Math.min(65535, v)), t:Date.now()});
+    cloudState.ok = Date.now(); cloudState.err = false;
+  } catch(e){ cloudState.err = true; }
+  const el = $('#syncst'); if (el) el.textContent = syncText();
+}
+function syncText(){ return cloudState.ok ? '✔ Zuletzt gesichert um ' + new Date(cloudState.ok).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}) : cloudState.err ? '⚠️ Noch nicht gesichert – prüfe dein Internet.' : 'Wird automatisch gesichert.'; }
+async function ensureCode(){
+  if (!cloudOn() || !P || P.code || codeBusy) return; codeBusy = true;
+  try {
+    for (let k = 0; k < 6; k++){
+      const c = newCode(); let ex; try { ex = await cGet('saves/' + c); } catch(e){ return; }
+      if (ex !== null) continue;
+      if (!P || P.code) return;
+      P.code = c; savePlayer(); cloudPush(true);
+      showModal('<h2>Dein Spielstand-Code</h2><div class="pnum bigcode"><span>Merk dir diesen Code</span><b>' + fmtCode(c) + '</b><small>Damit kommst du auf jedem Gerät zurück in dein Spiel. Schreib ihn auf oder mach einen Screenshot. Du findest ihn immer oben rechts unter dem QR-Symbol.</small></div><button class="btn big" data-m="close">Verstanden</button>');
+      return;
+    }
+  } finally { codeBusy = false; }
+}
+async function cloudFetchSave(code){
+  const v = await cGet('saves/' + code); if (!v || !v.b) return null;
+  const bytes = textToBytes(v.b); if (!bytes) return null;
+  const p = parseCode(bytes); if (p.type !== 'save') return null;
+  const s = p.data; if (Array.isArray(v.fr) && v.fr.length === NP) s.fr = v.fr; if (Array.isArray(v.fw) && v.fw.length === NP) s.fw = v.fw; s.code = code;
+  return s;
+}
+// ----- Lehrkraft: Klassendaten verschlüsselt (AES-GCM, Schlüssel aus Passwort per PBKDF2) -----
+const tEnc = new TextEncoder(), tDec = new TextDecoder();
+const toB64 = x => b64url(x instanceof Uint8Array ? x : new Uint8Array(x));
+const fromB64 = t => Uint8Array.from(unb64url(t));
+async function sha256hex(s){ return bytesToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', tEnc.encode(s)))); }
+const classId = name => sha256hex('mudi|' + String(name).trim().toLowerCase().replace(/\s+/g, ' '));
+async function deriveKey(pw, salt){
+  const base = await crypto.subtle.importKey('raw', tEnc.encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:150000, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['encrypt', 'decrypt']);
+}
+let tAuth = null, tPushTimer = null, tPushBusy = false, tScreen = 'login', tAutoFailed = false, tLoggingIn = false;
+const getCred = () => { try { return JSON.parse(sessionStorage.getItem('mm_tcred') || 'null'); } catch(e){ return null; } };
+const setCred = (n, p) => { try { sessionStorage.setItem('mm_tcred', JSON.stringify({name:n, pw:p})); } catch(e){} };
+const clearCred = () => { try { sessionStorage.removeItem('mm_tcred'); } catch(e){} };
+const defaultT = () => ({v:2, className:'', classSize:25, level:'leicht', pin:'', students:{}, sessions:[], open:null});
+function fixTeacher(T0){ Object.keys(T0.students).forEach(id => { const st = T0.students[id]; if (!st.latest || !st.latest.fl || st.latest.fl.length !== NP) delete T0.students[id]; }); return T0; }
+function setTcloud(t){ const e = $('#tcloud'); if (e) e.textContent = t; }
+function teacherPush(){ if (!cloudOn() || !tAuth) return; clearTimeout(tPushTimer); setTcloud('⏳ speichert …'); tPushTimer = setTimeout(teacherPushNow, 1200); }
+async function teacherPushNow(){
+  if (!T || !tAuth) return; if (tPushBusy){ teacherPush(); return; } tPushBusy = true;
+  try {
+    if (tAuth.lastT && !tAuth.force){ const rt = await cGet('classes/' + tAuth.id + '/t'); if (rt && rt !== tAuth.lastT){ tPushBusy = false; conflictModal(); return; } }
+    const iv = crypto.getRandomValues(new Uint8Array(12)), ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, tAuth.key, tEnc.encode(JSON.stringify(T))), t = Date.now();
+    await cPut('classes/' + tAuth.id, {s:toB64(tAuth.salt), iv:toB64(iv), d:toB64(ct), t, v:2});
+    tAuth.lastT = t; tAuth.force = false; setTcloud('☁️ gesichert');
+  } catch(e){ setTcloud('⚠️ nicht gesichert'); toast('⚠️ Cloud-Speichern hat nicht geklappt. Bitte Internet prüfen.'); }
+  tPushBusy = false;
+}
+function conflictModal(){
+  setTcloud('⚠️ Konflikt');
+  showModal('<h2>Daten wurden woanders geändert</h2><p>Diese Klasse wurde auf einem anderen Gerät verändert. Wenn du jetzt speicherst, gehen diese Änderungen verloren. Neu laden ist sicherer.</p><div class="mbtns"><button class="btn" data-m="reload">Neu laden</button><button class="btn ghost" data-m="force">Meine Version behalten</button></div>',
+    {on:{reload:m => { m.close(); const c = getCred(); T = null; tAuth = null; if (c) teacherLogin(c.name, c.pw); else renderTeacher(); }, force:m => { m.close(); tAuth.force = true; teacherPushNow(); }}});
+}
+async function teacherLogin(name, pw, silent){
+  try {
+    const id = await classId(name), doc = await cGet('classes/' + id);
+    if (!doc || !doc.d){ if (!silent) toast('Diese Klasse gibt es nicht. Prüfe den Namen oder lege die Klasse neu an.'); return false; }
+    const salt = fromB64(doc.s), key = await deriveKey(pw, salt); let obj;
+    try { obj = JSON.parse(tDec.decode(await crypto.subtle.decrypt({name:'AES-GCM', iv:fromB64(doc.iv)}, key, fromB64(doc.d)))); }
+    catch(e){ if (!silent) toast('Falsches Passwort.'); clearCred(); return false; }
+    tAuth = {id, salt, key, lastT:doc.t, force:false}; T = fixTeacher(Object.assign(defaultT(), obj)); setCred(name, pw); tAutoFailed = false; renderTeacher(); return true;
+  } catch(e){ if (!silent) toast('Keine Verbindung zur Cloud. Bitte Internet prüfen.'); return false; }
+}
+async function teacherCreate(name, pw, size, level, takeLocal){
+  try {
+    const id = await classId(name), ex = await cGet('classes/' + id);
+    if (ex){ toast('Diese Klasse gibt es schon. Bitte melde dich an oder wähle einen anderen Namen.'); return; }
+    const salt = crypto.getRandomValues(new Uint8Array(16)), key = await deriveKey(pw, salt);
+    T = takeLocal ? fixTeacher(Object.assign(defaultT(), store.get(TKEY, {}), {className:name})) : Object.assign(defaultT(), {className:name, classSize:size, level});
+    tAuth = {id, salt, key, lastT:0, force:false}; await teacherPushNow();
+    if (!tAuth.lastT){ T = null; tAuth = null; return; }
+    setCred(name, pw); renderTeacher(); toast('Klasse angelegt ✔ – merk dir das Passwort gut!');
+  } catch(e){ toast('Keine Verbindung zur Cloud. Bitte Internet prüfen.'); }
+}
+async function wipeTeacher(){ try { if (cloudOn() && tAuth) await cPut('classes/' + tAuth.id, null); } catch(e){} store.del(TKEY); clearCred(); T = null; tAuth = null; tResultId = null; tTab = 'scan'; tScreen = 'login'; renderTeacher(); }
+function registerSnap(s){
+  let st = T.students[s.id]; if (!st) st = T.students[s.id] = {id:s.id, name:s.name, firstSeen:Date.now(), counted:null};
+  st.name = s.name; st.latest = s; if (s.code) st.code = s.code; return st;
+}
+function parseCodesText(raw){ const set = new Set(); (String(raw).toUpperCase().match(/[A-HJ-NP-Z2-9]{4}-?[A-HJ-NP-Z2-9]{4}/g) || []).forEach(c => set.add(c.replace('-', ''))); return Array.from(set); }
+async function fetchKids(codes, label){
+  let ok = 0, bad = [];
+  for (const c of codes){ try { const s = await cloudFetchSave(c); if (s){ registerSnap(s); ok++; } else bad.push(c); } catch(e){ bad.push(c); } }
+  saveTeacher(); renderTeacher();
+  toast(ok + (ok === 1 ? ' Kind' : ' Kinder') + ' ' + label + (bad.length ? ' · nicht gefunden: ' + bad.map(fmtCode).join(', ') : ''));
+}
+function cloudKidsHTML(){
+  if (!cloudOn()) return '';
+  return '<section class="tcard"><h3>☁️ Kinder per Code</h3><p class="small">Jedes Kind hat einen 8-stelligen Code (Spiel → QR-Symbol oben rechts). Trage die Codes hier ein, dann wird der aktuelle Stand aus der Cloud geladen – ohne Scannen. Bekannte Kinder aktualisierst du mit einem Klick.</p><div class="tbtnrow"><button class="tbtn primary" data-t="addCodes">➕ Codes eintragen</button><button class="tbtn" data-t="refreshAll">🔄 Alle aktualisieren</button></div></section>';
+}
+function addCodesModal(){
+  showModal('<h2>Codes eintragen</h2><p class="small">Ein Code pro Zeile oder durch Leerzeichen getrennt. Beispiel: K7M2-QX4P</p><textarea id="codesIn" class="tinput" rows="6" placeholder="K7M2-QX4P&#10;R5TN-8WLA"></textarea><div class="mbtns"><button class="btn ghost" data-m="close">Abbrechen</button><button class="btn" data-m="ok">Laden</button></div>',
+    {on:{ok:m => { const c = parseCodesText($('#codesIn', m.el).value); if (!c.length){ toast('Ich finde keinen gültigen Code.'); return; } m.close(); toast('⏳ Lade …'); fetchKids(c, 'geladen'); }}});
+}
+function renderTeacherLoading(){ app.innerHTML = '<div class="tgate"><div class="tcard narrow"><h2>⏳ Anmelden …</h2><p>Die Klassendaten werden geladen und entschlüsselt.</p></div></div>'; }
+function renderTeacherLogin(){
+  const mk = tScreen === 'create', hasLocal = !!(store.get(TKEY, null) || {}).className;
+  app.innerHTML = '<div class="tgate"><div class="tcard narrow"><div class="tlogo big">Multiplikations- und Divisionsmonster <span>Lehrkraft-Ansicht</span></div>'
+    + (mk ? '<h2>Neue Klasse anlegen</h2><label>Klassenname<input id="liClass" class="tinput" placeholder="z. B. 6a" autocomplete="off"></label>'
+      + '<label>Passwort (mindestens 8 Zeichen)<input id="liPw" type="password" class="tinput" autocomplete="new-password"></label><label>Passwort wiederholen<input id="liPw2" type="password" class="tinput" autocomplete="new-password"></label>'
+      + '<label>Anzahl Kinder in der Klasse<input id="suSize" class="tinput" type="number" value="25" min="1" max="60"></label>'
+      + '<label>Schwierigkeit des Wochen-Bosses</label><div class="lvpick" id="suLevel">' + Object.keys(LEVELS).map(k => '<button class="tbtn ' + (k === 'leicht' ? 'primary' : '') + '" data-t="suLevel" data-l="' + k + '">' + LEVELS[k].n + ' · ' + LEVELS[k].per + '</button>').join('') + '</div>'
+      + (hasLocal ? '<label style="font-weight:700"><input type="checkbox" id="takeLocal" checked style="display:inline;width:auto;margin-right:8px">Klassendaten von diesem Gerät übernehmen</label>' : '')
+      + '<p class="small">Das Passwort kann nicht zurückgesetzt werden. Ohne Passwort sind die Klassendaten nicht lesbar.</p><button class="tbtn primary big" data-t="createDo">Klasse anlegen</button><button class="tbtn ghost" data-t="showLogin">Ich habe schon eine Klasse</button>'
+      : '<h2>Lehrkraft anmelden</h2><label>Klassenname<input id="liClass" class="tinput" placeholder="z. B. 6a" autocomplete="off"></label><label>Passwort<input id="liPw" type="password" class="tinput" autocomplete="current-password"></label>'
+      + '<button class="tbtn primary big" data-t="loginDo">Anmelden</button><div class="obsep" style="color:#6b6391"><span>oder</span></div><button class="tbtn" data-t="showCreate">Neue Klasse anlegen</button>')
+    + '<button class="tbtn ghost" data-t="toKids">Zur Spiel-Ansicht</button></div></div>';
+  const pw = $('#liPw'); if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') teacherAction(mk ? 'createDo' : 'loginDo'); });
+}
+
 function qrSVG(bytes){ const q = qrcode(0, 'M'); q.addData(String.fromCharCode.apply(null, bytes), 'Byte'); q.make(); return q.createSvgTag({cellSize:6, margin:24, scalable:true}); }
 
 // ================= Kamera / QR lesen =================
@@ -14269,6 +14416,7 @@ function cleanup(){
 function go(screen){
   cleanup(); window.scrollTo(0, 0); curBgWorld = -1;
   if (!P) return renderOnboarding();
+  ensureCode();
   ({map:renderMap, shop:renderShop, album:renderAlbum, monster:renderWardrobe, pass:renderPass, code:renderCode, settings:renderSettings}[screen] || renderMap)();
   applyBg();
 }
@@ -14300,9 +14448,9 @@ function renderOnboarding(){
    + '<input id="obname" class="obinput" maxlength="16" placeholder="Vorname oder Spitzname" autocomplete="off" autocapitalize="words" spellcheck="false">'
    + '<button class="btn big" data-action="obStart">Los geht\'s!</button>'
    + '<div class="obsep"><span>Schon gespielt? Anmelden mit</span></div>'
-   + '<div class="obrow"><button class="btn ghost" data-action="restore">QR-Code</button><button class="btn ghost" data-action="login">Spielernummer</button></div>'
-   + '<p class="obhint">QR-Code: auf jedem Gerät. Spielernummer: auf Geräten, auf denen du schon gespielt hast.</p>'
-   + '<button class="linkbtn small" data-action="teacher">Für Lehrkräfte</button>'
+   + (cloudOn() ? '<div class="obrow"><button class="btn" data-action="codeLogin">🔑 Mit Code</button><button class="btn ghost" data-action="restore">Alter QR-Code</button></div>' : '<div class="obrow"><button class="btn ghost" data-action="restore">QR-Code</button><button class="btn ghost" data-action="login">Spielernummer</button></div>')
+   + (cloudOn() ? '<p class="obhint">Mit deinem 8-stelligen Code kommst du auf jedem Gerät zurück. Hast du noch einen QR-Code aus der alten Version? Dann tippe auf „Alter QR-Code“ – dein Spielstand wird übernommen.</p>' : '<p class="obhint">QR-Code: auf jedem Gerät. Spielernummer: auf Geräten, auf denen du schon gespielt hast.</p>')
+   + '<button class="btn ghost" data-action="teacher">👩‍🏫 Lehrkraft-Login</button>'
    + '</div></div>';
   $('#obname').addEventListener('keydown', e => { if (e.key === 'Enter') kidAction('obStart'); });
 }
@@ -14382,11 +14530,11 @@ function openIslandSheet(id){
   const s = P.stars[id], sure = isl.facts.filter(f => P.fl[f] === 3).length, mast = islandMastered(id), bon = bonusIslands().has(id), weak = weakCount(id);
   const status0 = mast ? '<div class="sstatus train">✓ <b>Alles sicher!</b> Du kannst die Insel trotzdem wiederholen. Kisten und Tagesmission gibt es weiter.</div>'
     : bon ? '<div class="sstatus bonus">🎫 <b>Bonus-Insel: doppelte Pass-Punkte!</b> Hier warten ' + weak + ' wackelige oder fällige Aufgaben.</div>' : ''; const status = ((P.pres[id] || 0) ? '<div class="sstatus bonus"><b>Prestige ' + P.pres[id] + ':</b> ' + (presF(id) > 1 ? 'Der Boss hat ' + Math.round((presF(id) - 1) * 100) + ' % mehr Leben. ' : '') + 'Alle 5 Prestige-Stufen bekommt der Boss mehr Leben (noch ' + (5 - P.pres[id] % 5) + ').</div>' : '') + status0;
-  const abil = (hasShield(isl) ? '<div class="sabil">🛡️ <b>Schild:</b> halbiert deinen Schaden. 3 richtige in Folge brechen es – nach 15 Sekunden kommt es zurück.</div>' : '')
-    + (hasHeal(isl) ? '<div class="sabil">💚 <b>Heilung:</b> Bei jedem Fehler heilt sich der Boss um 15.</div>' : '')
+  const abil = (hasShield(isl) ? '<div class="sabil">🛡️ <b>Schild:</b> halbiert deinen Schaden. ' + (isl.big ? 2 : 3) + ' richtige in Folge brechen es – nach ' + (isl.big ? 25 : 15) + ' Sekunden kommt es zurück.</div>' : '')
+    + (hasHeal(isl) ? '<div class="sabil">💚 <b>Heilung:</b> Bei jedem Fehler heilt sich der Boss um ' + (isl.big ? 8 : 15) + '.</div>' : '')
     + (isl.mode === 'gap' ? '<div class="sabil">🧩 <b>Lückenaufgaben:</b> Finde die fehlende Zahl, z. B. 7 × ? = 56.</div>' : isl.mode === 'div' ? '<div class="sabil">🍰 <b>Geteiltaufgaben:</b> z. B. 56 : 7 = ?</div>'
       : isl.mode === 'all' ? '<div class="sabil">🔀 <b>Alles gemischt:</b> Malaufgaben, Lückenaufgaben und Geteiltaufgaben.</div>' : '<div class="sabil">🔄 Aufgaben, die du schon gut kannst, kommen auch umgedreht: 56 : 7 oder 7 × ? = 56.</div>');
-  const goals = [[1, 'Besiegt', 'Besiege den Boss in ' + (ROUND_MS / 1000) + ' Sekunden'], [2, 'Blitz', 'Besiege ihn mit ' + blitzNeed() + ' Sekunden Rest'], [4, 'Perfekt', 'Besiege ihn ohne einen Fehler']];
+  const goals = [[1, 'Besiegt', 'Besiege den Boss in ' + Math.round((ROUND_MS + (isl.timeBonus || 0)) / 1000) + ' Sekunden'], [2, 'Blitz', 'Besiege ihn mit ' + blitzNeed() + ' Sekunden Rest'], [4, 'Perfekt', 'Besiege ihn ohne einen Fehler']];
   showModal('<div class="sboss">' + isl.boss[0] + '</div><h2>' + esc(isl.boss[1]) + '</h2><p class="ssub">' + isl.label + ' · ' + isl.sub + '</p><div class="shp">❤️ ' + isl.hp + ' Lebenspunkte</div>'
     + status + abil + '<ul class="goals">' + goals.map(g => '<li class="' + (s & g[0] ? 'got' : '') + '">' + starSVG(s & g[0]) + '<b>' + g[1] + '</b><span>' + g[2] + '</span></li>').join('') + '</ul>'
     + '<div class="sinfo"><span>🏆 Rekord: <b>' + (P.best[id] || '–') + '</b> Treffer</span><span>🧠 Sicher: <b>' + sure + ' / ' + isl.facts.length + '</b></span></div>'
@@ -14662,14 +14810,14 @@ function backupBanner(){
   return '<div class="backupbar"><div><b>Sicherung nicht vergessen!</b> Mach einen Screenshot von deinem Code. Dann ist dein Fortschritt auch bei einem neuen Gerät gerettet.</div><div class="bbtns"><button class="btn" data-action="code">Code ansehen</button><button class="btn ghost" data-action="backupLater">Später</button></div></div>';
 }
 function saveCodeImage(){
-  const bytes = encodeSave(P), svg = qrSVG(bytes).replace(/ (width|height)="[^"]*"/g, '').replace('<svg', '<svg width="520" height="520"');
+  const bytes = (cloudOn() && P.code) ? codeQrBytes(P.code) : encodeSave(P), svg = qrSVG(bytes).replace(/ (width|height)="[^"]*"/g, '').replace('<svg', '<svg width="520" height="520"');
   const img = new Image();
   img.onload = () => {
     const cv = document.createElement('canvas'); cv.width = 640; cv.height = 860; const c = cv.getContext('2d');
     c.fillStyle = '#ffffff'; c.fillRect(0, 0, 640, 860); c.fillStyle = '#1a1240'; c.textAlign = 'center';
     c.font = 'bold 34px sans-serif'; c.fillText('Multiplikations- und', 320, 52); c.fillText('Divisionsmonster', 320, 92); c.font = 'bold 36px sans-serif'; c.fillText(P.name, 320, 142);
     c.drawImage(img, 65, 165, 510, 510);
-    c.font = '26px sans-serif'; c.fillText('Spielernummer', 320, 720); c.font = 'bold 46px sans-serif'; c.fillText(fmtNumber(P.id), 320, 780);
+    c.font = '26px sans-serif'; c.fillText((cloudOn() && P.code) ? 'Spielstand-Code' : 'Spielernummer', 320, 720); c.font = 'bold 46px sans-serif'; c.fillText((cloudOn() && P.code) ? fmtCode(P.code) : fmtNumber(P.id), 320, 780);
     c.font = '19px sans-serif'; c.fillStyle = '#555'; c.fillText('Stand: ' + fmtDate(new Date()), 320, 820); c.fillText('Mit diesem Bild kommst du auf jedem Gerät zurück ins Spiel.', 320, 846);
     cv.toBlob(b => {
       if (!b){ toast('Das Bild konnte nicht erstellt werden. Mach bitte einen Screenshot.'); return; }
@@ -14681,6 +14829,19 @@ function saveCodeImage(){
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 function renderCode(){
+  if (cloudOn()) return renderCodeCloud();
+  renderCodeLegacy();
+}
+function renderCodeCloud(){
+  P.lastBackup = dayNum(); savePlayer(); document.body.className = 'w1';
+  const has = !!P.code;
+  app.innerHTML = '<div class="screen page">' + pageHead('Mein Code') + '<div class="pagebody center">'
+    + (has ? '<div class="pnum bigcode"><span>Dein Spielstand-Code</span><b>' + fmtCode(P.code) + '</b><small>Damit kommst du auf jedem Gerät zurück in dein Spiel: Bei „Schon gespielt?“ auf „Mit Code“ tippen. Schreib den Code auf oder mach einen Screenshot!</small></div><div class="qrbox mini" id="qrbox">' + qrSVG(codeQrBytes(P.code)) + '</div><p class="hint">Der QR-Code ist für deine Lehrkraft beim Wochen-Scan.</p>' : '<div class="pnum"><span>Dein Code wird erstellt …</span><small>Dafür brauchst du Internet. Tippe unten auf „Jetzt sichern“.</small></div>')
+    + '<p class="qrname">' + esc(P.name) + ' · Level ' + levelInfo(P.xp).level + ' · ★ ' + starsCount(P) + '</p><p class="hint" id="syncst">' + syncText() + '</p>'
+    + '<div class="mbtns"><button class="btn" data-action="syncNow">☁️ Jetzt sichern</button>' + (has ? '<button class="btn ghost" data-action="codeCopy">Code kopieren</button><button class="btn ghost" data-action="codeImg">Als Bild speichern</button>' : '') + '</div>'
+    + '<p class="hint"><button class="linkbtn small" data-action="codeLegacy">Langer Notfall-QR-Code (alte Version)</button></p></div></div>';
+}
+function renderCodeLegacy(){
   P.lastBackup = dayNum(); savePlayer();
   document.body.className = 'w1';
   const bytes = encodeSave(P), text = codeText(bytes);
@@ -14706,11 +14867,12 @@ function renderSettings(){
     + '<button class="setrow" data-action="unlockScan"><span>🔓 Code der Lehrkraft scannen (Freischalten, Rundenzeit)</span><b>›</b></button>'
     + ((P.adapt && (P.adapt.extra || P.adapt.calm || P.adapt.quiet)) ? '<div class="setinfo"><b>Anpassungen deiner Lehrkraft:</b> ' + [P.adapt.extra ? '+' + P.adapt.extra + ' Sekunden' : '', P.adapt.calm ? 'ruhiger Übungsmodus' : '', P.adapt.quiet ? 'weniger Effekte und Musik' : ''].filter(Boolean).join(' · ') + '</div>' : '')
     + '<button class="setrow" data-action="install"><span>App installieren / ohne WLAN spielen</span><b>›</b></button>'
+    + (cloudOn() ? '<button class="setrow" data-action="codeLogin"><span>🔑 Mit 8-stelligem Code anmelden</span><b>›</b></button>' : '')
     + '<button class="setrow" data-action="login"><span>Anmelden mit Spielernummer</span><b>›</b></button>'
     + '<button class="setrow" data-action="logout"><span>Abmelden (anderes Kind)</span><b>›</b></button>'
     + '<button class="setrow" data-action="restore"><span>Anmelden mit QR-Code oder Text</span><b>›</b></button>'
     + '<button class="setrow" data-action="teacher"><span>👩‍🏫 Für Lehrkräfte</span><b>›</b></button>'
-    + '</div><p class="hint center">Dein Spielstand ist nur auf diesem Gerät gespeichert. Sichere ihn mit einem Screenshot von deinem Code.</p></div></div>';
+    + '</div><p class="hint center">' + (cloudOn() ? 'Dein Spielstand wird automatisch unter deinem Code gesichert. Merk dir den Code (QR-Symbol oben rechts).' : 'Dein Spielstand ist nur auf diesem Gerät gespeichert. Sichere ihn mit einem Screenshot von deinem Code.') + '</p></div></div>';
 }
 function openScanModal(title, hint, onBytes){
   const m = showModal('<h2>' + title + '</h2><p class="hint">' + hint + '</p><div class="scanwrap"><video playsinline muted autoplay></video><div class="scanframe"></div><div class="camerr" hidden></div></div>'
@@ -14748,7 +14910,8 @@ function handleRestoreBytes(bytes, m){
   if (p.type !== 'save'){ toast('Das ist ein Freischalt-Code, kein Spielstand.'); return; }
   m.close(); Sound.beep(); const s = p.data;
   confirmModal('Spielstand von ' + esc(s.name) + ' laden?', 'Level ' + levelInfo(s.xp).level + ' · ★ ' + starsCount(s) + ' · ' + s.tc + ' Treffer<br><span class="hint">Stand vom ' + fmtDate(dayToDate(s.day)) + '</span>' + (P ? '<br><br>⚠️ Der jetzige Spielstand auf diesem Gerät wird ersetzt.' : ''), 'Laden', () => {
-    P = playerFromSnap(s, P); savePlayer(); ui.world = null; go('map'); confetti(80); toast('Spielstand geladen! 🎉');
+    const prof = store.get(PRKEY, {})[s.id], oldCode = (P && P.id === s.id && P.code) || (prof && prof.code) || '';
+    P = playerFromSnap(s, P); P.code = oldCode; savePlayer(); ui.world = null; go('map'); confetti(80); toast('Spielstand geladen! 🎉');
   });
 }
 function handleUnlockBytes(bytes, m){
@@ -14764,8 +14927,29 @@ function handleUnlockBytes(bytes, m){
   m.close(); P.teacherUnlock = Math.max(P.teacherUnlock, p.level); savePlayer(); Sound.levelup(); ui.world = null; go('map'); confetti(90); toast('🔓 ' + UNLOCK_NAMES[p.level] + ' freigeschaltet!');
 }
 
+
+function codeLoginModal(){
+  showModal('<h2>Mit Code anmelden</h2><p class="hint">Gib deinen 8-stelligen Spielstand-Code ein.</p><input class="obinput" id="cdIn" maxlength="9" placeholder="K7M2-QX4P" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:.12em"><div class="mbtns"><button class="btn" data-m="go">Anmelden</button></div><p class="hint center">Noch einen alten QR-Code aus der früheren Version? Den kannst du hier übernehmen:</p><div class="mbtns"><button class="btn ghost" data-m="legacy">Alter QR-Code</button><button class="btn ghost" data-m="close">Abbrechen</button></div>',
+    {dismissable:true, on:{go:m => codeLogin($('#cdIn', m.el).value, m), legacy:m => { m.close(); openScanModal('Alten Spielstand laden', 'Halte deinen alten QR-Code vor die Kamera oder wähle den Screenshot davon. Du bekommst danach einen neuen 8-stelligen Code.', handleRestoreBytes); }}});
+  setTimeout(() => { const i = $('#cdIn'); if (i) i.focus(); }, 60);
+}
+async function codeLogin(txt, m){
+  const code = normCode(txt);
+  if (!validCode(code)){ Sound.err(); toast('Der Code hat 8 Zeichen aus Buchstaben und Ziffern.'); return; }
+  toast('⏳ Suche deinen Spielstand …'); let s;
+  try { s = await cloudFetchSave(code); } catch(e){ Sound.err(); toast('Keine Verbindung. Bitte Internet prüfen.'); return; }
+  if (!s){ Sound.err(); toast('Diesen Code kenne ich nicht. Prüfe ihn nochmal.'); return; }
+  m.close(); Sound.beep();
+  confirmModal('Spielstand von ' + esc(s.name) + ' laden?', 'Level ' + levelInfo(s.xp).level + ' · ★ ' + starsCount(s) + ' · ' + s.tc + ' Treffer<br><span class="hint">Stand vom ' + fmtDate(dayToDate(s.day)) + '</span>' + (P ? '<br><br>⚠️ Der jetzige Spielstand auf diesem Gerät wird ersetzt.' : ''), 'Laden', () => {
+    P = playerFromSnap(s, P); P.code = code; savePlayer(); cloudPush(true); ui.world = null; go('map'); confetti(80); toast('Spielstand geladen! 🎉');
+  });
+}
 function kidAction(a, el){
   switch (a){
+    case 'codeLogin': codeLoginModal(); break;
+    case 'syncNow': { toast('⏳ Sichere …'); cloudPush(true); setTimeout(() => { const e = $('#syncst'); if (e) e.textContent = syncText(); }, 1500); break; }
+    case 'codeCopy': { const t = P.code || ''; const done = () => toast('Code kopiert ✔'); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => toast(fmtCode(t))); else toast(fmtCode(t)); break; }
+    case 'codeLegacy': document.body.className = 'w1'; renderCodeLegacy(); break;
     case 'obColor': ui.obColor = +el.dataset.i; $$('.sw').forEach(s => s.classList.toggle('on', s === el)); $('#obmonster').innerHTML = monsterSVG({look:{color:ui.obColor}}); break;
     case 'obStart': { const inp = $('#obname'); const name = trimName(inp.value); if (!name){ restart(inp, 'shake'); toast('Bitte gib deinen Namen ein.'); return; } P = newPlayer(name, ui.obColor); savePlayer(); Sound.levelup(); confetti(70); ui.world = null; go('map'); break; }
     case 'restore': openScanModal('Spielstand laden', 'Halte deinen Code vor die Kamera oder wähle den Screenshot davon.', handleRestoreBytes); break;
@@ -14853,7 +15037,7 @@ function startRound(id){
   if (!isl.facts.length){ go('map'); return; }
   const training = false, bonus = id < 0 || bonusIslands().has(id);
   const pool = isl.pure ? [] : weakFacts().filter(f => !isl.facts.includes(f));
-  const fx = activeFx(), hpBase = Math.max(10, Math.round(isl.hp * presF(id) * (1 - fxIs(fx, 'hp') / 100) / 2) * 2), tMax = ROUND_MS + fxIs(fx, 'time') * 1000 + ((P.adapt && P.adapt.extra) || 0) * 1000, c0 = fxIs(fx, 'combo');
+  const fx = activeFx(), hpBase = Math.max(10, Math.round(isl.hp * presF(id) * (1 - fxIs(fx, 'hp') / 100) / 2) * 2), tMax = ROUND_MS + fxIs(fx, 'time') * 1000 + ((P.adapt && P.adapt.extra) || 0) * 1000 + (isl.timeBonus || 0), c0 = fxIs(fx, 'combo');
   R = {id, isl, mode:isl.mode || 'mul', training, bonus, surprisePool:pool, surprise:false, lp:0, hpMax:hpBase, hp:hpBase, timeLeft:tMax, timeMax:tMax, fx, calm:!!(P.adapt && P.adapt.calm), saves:0, comboBase:c0, combo:c0, maxCombo:0, tier:tierOf(c0), correct:0, wrong:0, damage:0, lastDmg:10,
     defeated:false, defeatLeft:0, bonusMode:false, goldShown:false, input:'', pi:-1, answer:0, disp:'', factStart:0, recent:[], revenge:[],
     revengeSet:new Set(isl.facts.filter(f => P.fl[f] === 1 && P.fw[f] > 0)), mStart:masteredCount(P), flStart:P.fl.slice(), wrongList:[], wrongShown:{}, running:false, locked:false, ended:false, lastFrame:0, lastSec:-1,
@@ -14976,7 +15160,7 @@ function checkAnswer(){
       else if (fx.k === 'timeTier' && R.tier > before) addTime(fx.v * 1000);
     }
     let blocked = false;
-    if (R.shield && !R.defeated){ R.shieldRun++; if (R.shieldRun >= 3 - fxIs(R.fx, 'shield')){ breakShield(); } else { dmg = Math.ceil(dmg / 2); blocked = true; } }
+    if (R.shield && !R.defeated){ R.shieldRun++; if (R.shieldRun >= Math.max(1, (R.isl.big ? 2 : 3) - fxIs(R.fx, 'shield'))){ breakShield(); } else { dmg = Math.ceil(dmg / 2); blocked = true; } }
     R.lastDmg = dmg; R.damage += dmg;
     feedbackCorrect(dmg, revenge, R.tier > before, blocked, w);
     if (!R.defeated){ R.hp = Math.max(0, R.hp - dmg); if (R.hp === 0){ R.defeated = true; R.defeatLeft = R.timeLeft / 1000; onBossDefeated(); } }
@@ -14990,7 +15174,7 @@ function checkAnswer(){
     Sound.wrong(); document.body.classList.remove('fire'); Music.setFire(false);
     restart($('#answer'), 'bad');
     if (saved){ const [x, y] = centerOf($('#combo')); floatText(x, y, 'Combo gerettet 🛡️', 'small'); } else if (had >= 5){ const [x, y] = centerOf($('#combo')); floatText(x, y, 'Combo weg', 'small'); }
-    if (hasHeal(R.isl) && !R.defeated && R.hp < R.hpMax){ const h = Math.min(Math.max(3, 15 - fxIs(R.fx, 'healCut')), R.hpMax - R.hp); R.hp += h; updateBossUI(); const b = $('#boss'); restart(b, 'heal'); const [x, y] = centerOf(b); floatText(x, y - 30, '+' + h + ' 💚', 'heal'); }
+    if (hasHeal(R.isl) && !R.defeated && R.hp < R.hpMax){ const h = Math.min(Math.max(3, (R.isl.big ? 8 : 15) - fxIs(R.fx, 'healCut')), R.hpMax - R.hp); R.hp += h; updateBossUI(); const b = $('#boss'); restart(b, 'heal'); const [x, y] = centerOf(b); floatText(x, y - 30, '+' + h + ' 💚', 'heal'); }
     updateComboUI();
     const sb = $('#stratbox');
     const rev = R.curMode !== 'mul' ? '<em>🔄 Denk an die Malaufgabe: ' + R.x + ' × ' + R.y + ' = ' + (R.x * R.y) + '</em>' : '';
@@ -15001,7 +15185,7 @@ function checkAnswer(){
   }
 }
 function breakShield(){
-  R.shield = false; R.shieldRun = 0; R.shieldBack = Math.max(0, R.timeLeft - 15000);
+  R.shield = false; R.shieldRun = 0; R.shieldBack = Math.max(0, R.timeLeft - (R.isl.big ? 25000 : 15000));
   const b = $('#boss'); b.classList.remove('shielded'); banner('🛡️ SCHILD GEBROCHEN!', 't1'); Sound.tier(1);
   const c = $('#shieldchip'); if (c) c.classList.add('broken');
 }
@@ -15119,7 +15303,7 @@ function endRound(){
   }
   P.rounds++;
   // Lernrunde = mindestens 3 Treffer UND mindestens 3 Lernpunkte UND keine Trainingsinsel
-  const replay = !review && prevStars === 7, learning = R.correct >= 3 && (R.lp >= 3 || replay), dailyWasDone = P.daily.done;
+  const replay = !review && prevStars === 7, learning = R.correct >= 3 && (R.lp >= 3 || (replay && R.defeated) || newBits > 0), dailyWasDone = P.daily.done;
   if (R.correct >= 3){ if (learning) P.stats.learn++; else P.stats.train++; }
   P.stats.lpt = (P.stats.lpt || 0) + R.lp; P.lastPlay = dayNum();
   const levelBefore = levelInfo(P.xp).level;
@@ -15128,7 +15312,7 @@ function endRound(){
   if (learning && R.fx && R.fx.k === 'bonusPiece' && Math.random() * 100 < R.fx.v){ const c = drawCard([100, 0, 0, 0]); if (c) fxNote = '🃏 ' + CARDS[R.fx.i][1] + ' bringt ein Extra-Kartenteil: ' + CARDS[c.i][0] + ' (' + c.n + ' / ' + c.need + ')'; }
   if (learning && R.fx && R.fx.k === 'coinsRound'){ P.coins += R.fx.v; fxNote = '🪙 +' + R.fx.v + ' Coins von ' + CARDS[R.fx.i][1]; }
   let chest = null, mission = false, mega = null;
-  if (learning && !dailyWasDone){ const tier = R.defeated ? (R.damage >= R.hpMax * goldF() && (replay || R.lp >= goldLp()) ? 'epic' : 'rare') : 'common'; chest = {tier, rewards:openChest(tier)}; }
+  if (learning){ const tier = R.defeated ? (R.damage >= R.hpMax * goldF() && (replay || R.lp >= goldLp()) ? 'epic' : 'rare') : 'common'; chest = {tier, rewards:openChest(tier)}; }
   if (learning){ P.daily.rounds++; if (P.stats.lastDay !== dayNum()){ P.stats.lastDay = dayNum(); P.stats.days = (P.stats.days || 0) + 1; } if (!P.daily.done && P.daily.rounds >= DAILY_ROUNDS){ P.daily.done = true; mission = true; P.stats.missions = (P.stats.missions || 0) + 1; mega = openChest('legendary'); } }
   if (review && learning) P.review.done = true;
   const newSure = Math.max(0, masteredCount(P) - R.mStart);
@@ -15187,8 +15371,8 @@ function renderResults(res){
   if (res.chest) chestZone = '<button class="chestbtn" id="chestbtn" data-action="openChest">' + chestSVG(res.chest.tier) + '<span class="tap">' + TIERNAME[res.chest.tier] + ' – tippe zum Öffnen!</span></button><div class="rewards" id="rewards"></div>';
   else if (res.training) chestZone = '<div class="emptychest">🏋️ Auf Trainingsinseln gibt es keine Kisten.<br>Probier eine Insel mit <b>🎫 ×2</b> oder die nächste neue Insel!</div>';
   else if (res.correct < 3) chestZone = '<div class="emptychest">Für eine Kiste brauchst du mindestens 3 Treffer in einer Runde.</div>';
-  else if (!res.counts) chestZone = '<div class="emptychest">Für eine Kiste brauchst du mindestens 3 Lernpunkte 🧠.<br>Die gibt es für neue und wackelige Aufgaben.</div>';
-  else chestZone = '<div class="emptychest">🌙 Die Schatzkammer ist für heute leer – morgen gibt es neue Kisten!<br>Sterne, Rekorde und XP sammelst du trotzdem.</div>';
+  else if (!res.counts) chestZone = '<div class="emptychest">Für eine Kiste brauchst du mindestens 3 Lernpunkte 🧠 – oder besiege den Boss einer Insel mit 3 Sternen.<br>Mit jeder Prestige-Stufe wird er stärker.</div>';
+  else chestZone = '<div class="emptychest">Nach jeder Lern-Runde gibt es eine neue Kiste!</div>';
   const lastStat = res.defeated ? '<div><b>' + Math.round(res.timeMax / 1000 - res.defeatLeft) + ' s</b><span>bis besiegt</span></div>' : '<div><b>' + res.hpPct + ' %</b><span>Boss-Leben</span></div>';
   const merk = res.wrongList.slice(0, 5).map(pi => { const w = res.wrongShown[pi] || {}; return '<div class="merk"><b>' + esc(w.t || '') + '</b><span>💡 ' + esc(w.s || '') + '</span></div>'; }).join('');
   app.innerHTML = '<div class="screen results">'
@@ -15341,7 +15525,7 @@ function missionModal(res, next){
   Sound.levelup(); confetti(110);
   showModal('<div class="mmicon">🎯</div><h2>Tagesmission erfüllt!</h2><p>' + DAILY_ROUNDS + ' Lern-Runden geschafft – stark! Hier ist deine Legendäre Kiste:</p>'
     + '<button class="chestbtn" data-m="open">' + chestSVG('legendary') + '<span class="tap">Tippe zum Öffnen!</span></button><div class="rewards" id="megaRewards"></div>'
-    + '<p class="hint" id="megaHint" hidden>Neue Kisten gibt es morgen wieder. Weiterüben bringt dir trotzdem Sterne, Rekorde und XP!</p><button class="btn big" data-m="close" id="megaClose" disabled>Super!</button>',
+    + '<p class="hint" id="megaHint" hidden>Weiterüben bringt dir weitere Kisten, Sterne und XP!</p><button class="btn big" data-m="close" id="megaClose" disabled>Super!</button>',
     {onClose:next, on:{open:(m, el) => openChestAnim(el, res.mega, $('#megaRewards', m.el), () => { $('#megaHint', m.el).hidden = false; $('#megaClose', m.el).disabled = false; }, 'legendary')}});
 }
 
@@ -15353,18 +15537,26 @@ function loadTeacher(){
   Object.keys(T0.students).forEach(id => { const st = T0.students[id]; if (!st.latest || !st.latest.fl || st.latest.fl.length !== NP) delete T0.students[id]; });
   return T0;
 }
-function saveTeacher(){ if (!store.set(TKEY, T)) toast('⚠️ Speichern fehlgeschlagen – ist der Speicher voll?'); }
+function saveTeacher(){ if (cloudOn() && tAuth){ teacherPush(); return; } if (!store.set(TKEY, T)) toast('⚠️ Speichern fehlgeschlagen – ist der Speicher voll?'); }
 const tUnlocked = () => { try { return sessionStorage.getItem('mm_tok') === '1'; } catch(e){ return false; } };
 function renderTeacher(){
-  T = T || loadTeacher();
   document.body.className = 'teacher';
-  if (!T.className) return renderTeacherSetup();
-  if (T.pin && !tUnlocked()) return renderPinGate();
+  if (cloudOn()){
+    if (!T){
+      const c = getCred();
+      if (c && !tAutoFailed){ if (!tLoggingIn){ tLoggingIn = true; teacherLogin(c.name, c.pw, true).then(ok => { tLoggingIn = false; if (!ok){ tAutoFailed = true; renderTeacher(); } }); } return renderTeacherLoading(); }
+      return renderTeacherLogin();
+    }
+  } else {
+    T = T || loadTeacher();
+    if (!T.className) return renderTeacherSetup();
+    if (T.pin && !tUnlocked()) return renderPinGate();
+  }
   if (T.open && !tScanHidden) return renderScanSession();
   if (tResultId) return renderWeekResult(tResultId);
-  const tabs = [['start', 'Schnellstart'], ['scan', '📷 Wochen-Scan'], ['class', '👧 Klasse'], ['errors', '🧩 Stolpersteine'], ['unlock', '🔓 Freischalten'], ['data', '⚙️ Einstellungen']];
-  const body = {start:startTabHTML, scan:scanTabHTML, class:classTabHTML, errors:errorsTabHTML, unlock:unlockTabHTML, data:dataTabHTML}[tTab]();
-  app.innerHTML = '<div class="tpage"><header class="thead"><div class="tlogo">Multiplikations- und Divisionsmonster <span>Lehrkraft-Ansicht</span></div><div class="tclass">' + esc(T.className) + '</div><button class="tbtn ghost" data-t="toKids">Zur Spiel-Ansicht</button></header>'
+  const tabs = [['start', 'Schnellstart'], ['scan', '📷 Wochen-Scan'], ['class', '👧 Klasse'], ['rows', '📊 Reihen & Aufgaben'], ['errors', '🧩 Stolpersteine'], ['unlock', '🔓 Freischalten'], ['data', '⚙️ Einstellungen']];
+  const body = {start:startTabHTML, scan:scanTabHTML, class:classTabHTML, rows:rowsTabHTML, errors:errorsTabHTML, unlock:unlockTabHTML, data:dataTabHTML}[tTab]();
+  app.innerHTML = '<div class="tpage"><header class="thead"><div class="tlogo">Multiplikations- und Divisionsmonster <span>Lehrkraft-Ansicht</span></div><div class="tclass">' + esc(T.className) + (cloudOn() ? ' <span class="small" id="tcloud">☁️ verbunden</span>' : '') + '</div>' + (cloudOn() ? '<button class="tbtn ghost" data-t="tLogout">Abmelden</button>' : '') + '<button class="tbtn ghost" data-t="toKids">Zur Spiel-Ansicht</button></header>'
     + '<nav class="ttabs">' + tabs.map(([k, n]) => '<button class="ttab ' + (k === tTab ? 'on' : '') + '" data-t="tab" data-tab="' + k + '">' + n + '</button>').join('') + '</nav><main class="tbody">' + body + '</main></div>';
   const imp = $('#importFile'); if (imp) imp.addEventListener('change', importTeacher);
 }
@@ -15409,7 +15601,7 @@ function startTabHTML(){
     ['Tabelle und Ausdruck', 'Tab „Klasse“: Oben stehen Kinder, die länger nicht gespielt haben. Darunter speicherst du die Übersicht als Tabelle oder druckst sie.'],
     ['Auf dem iPad installieren', 'Seite in Safari öffnen → Teilen-Symbol → „Zum Home-Bildschirm“. Danach startet das Spiel wie eine App und läuft auch ohne WLAN. Die Seite muss mit https geöffnet werden.']
   ];
-  return '<section class="tcard"><h3>So nutzt du die Lehrkraft-Ansicht</h3><ol class="tsteps">' + steps.map(([t, d]) => '<li><b>' + t + '</b><span>' + d + '</span></li>').join('') + '</ol><div class="tbtnrow"><button class="tbtn primary" data-t="tab" data-tab="data">Zu den Einstellungen</button><button class="tbtn" data-t="tab" data-tab="scan">Zum Wochen-Scan</button></div></section>';
+  return '<section class="tcard"><h3>So nutzt du die Lehrkraft-Ansicht</h3><ol class="tsteps">' + (cloudSteps().concat(steps)).map(([t, d]) => '<li><b>' + t + '</b><span>' + d + '</span></li>').join('') + '</ol><div class="tbtnrow"><button class="tbtn primary" data-t="tab" data-tab="data">Zu den Einstellungen</button><button class="tbtn" data-t="tab" data-tab="scan">Zum Wochen-Scan</button></div></section>';
 }
 function scanTabHTML(){
   const n = studentsList().length, B = CLASS_BOSSES[T.sessions.length % CLASS_BOSSES.length], lv = levelOf(), L = LEVELS[lv];
@@ -15448,7 +15640,7 @@ function renderScanSession(){
     + '<div class="tcam small"><video id="tvideo" playsinline muted autoplay></video><div class="scanframe"></div><div class="scanflash" id="scanflash"></div><div class="camerr" id="camerr" hidden></div>'
     + '<div class="camtools"><button class="tbtn" data-t="flip" title="Kamera wechseln">🔄</button><button class="tbtn" data-t="camToggle" id="camToggle">⏸</button><label class="tbtn" title="Foto">🖼️<input type="file" accept="image/*" id="tfile" hidden></label><button class="tbtn" data-t="pasteCode" title="Text-Code">⌨️</button></div></div>'
     + '<div class="fighters" id="fighters"></div></div>'
-    + '<footer class="tfoot"><button class="tbtn ghost" data-t="cancelScan">Scan verwerfen</button><button class="tbtn primary big" data-t="finishScan">✔ Scannen abschließen</button></footer></div>';
+    + '<footer class="tfoot"><button class="tbtn ghost" data-t="cancelScan">Scan verwerfen</button>' + (cloudOn() ? '<button class="tbtn" data-t="loadAll">☁️ Alle bekannten Kinder laden</button>' : '') + '<button class="tbtn primary big" data-t="finishScan">✔ Scannen abschließen</button></footer></div>';
   updateScanUI(true);
   tScanner = new Scanner($('#tvideo'), teacherBytes, msg => { const e = $('#camerr'); if (!e) return; e.hidden = false; e.innerHTML = '<b>📷 ' + esc(msg) + '</b><small>Foto oder Text-Code geht auch.</small>'; });
   tScanner.start();
@@ -15490,11 +15682,27 @@ function fighterAttack(id, dmg, name){
 }
 function teacherBytes(bytes){
   const S = T.open; if (!S) return;
+  const txt = String.fromCharCode.apply(null, bytes.slice(0, 40)), m = /^MMC-([A-Z0-9]{8})$/.exec(txt);
+  if (m) return teacherCode(m[1]);
+  if (bytes.length <= 16 && validCode(normCode(txt))) return teacherCode(normCode(txt));
   let p; try { p = parseCode(bytes); } catch(e){ Sound.err(); scanFlash('err', 'Nicht lesbar', e.message); return; }
   if (p.type !== 'save'){ Sound.err(); scanFlash('err', 'Freischalt-Code', 'Das ist kein Spielstand.'); return; }
-  const s = p.data; let st = T.students[s.id];
-  if (!st) st = T.students[s.id] = {id:s.id, name:s.name, firstSeen:Date.now(), counted:null};
-  st.name = s.name; st.latest = s; st.lastScanAt = Date.now();
+  teacherSnap(p.data);
+}
+async function teacherCode(code){
+  if (!cloudOn()){ Sound.err(); scanFlash('err', 'Keine Cloud', 'Die Cloud ist nicht eingerichtet.'); return; }
+  try { const s = await cloudFetchSave(code); if (!s){ Sound.err(); scanFlash('err', 'Code unbekannt', fmtCode(code)); return; } teacherSnap(s); }
+  catch(e){ Sound.err(); scanFlash('err', 'Keine Verbindung', 'Bitte Internet prüfen.'); }
+}
+async function loadAllKids(){
+  const S = T.open; if (!S) return;
+  const list = studentsList().filter(s => s.code && !S.scans[s.id]);
+  if (!list.length){ toast('Keine weiteren bekannten Codes. Lies jedes Kind einmal ein oder trage Codes ein (⌨️).'); return; }
+  for (const st of list){ if (!T.open) break; await teacherCode(st.code); await new Promise(r => setTimeout(r, 900)); }
+}
+function teacherSnap(s){
+  const S = T.open; if (!S) return;
+  const st = registerSnap(s); st.lastScanAt = Date.now();
   const base = st.counted || {tc:0, lp:0, stars:0, mastered:0, learn:0, train:0, days:0, missions:0};
   const lpt = s.stats.lpt || 0, raw = Math.max(0, lpt - (base.lp || 0));
   // Der Wochen-Boss zählt Lernpunkte (neue/wackelige Aufgaben), gedeckelt pro Kind
@@ -15510,8 +15718,8 @@ function teacherBytes(bytes){
   updateScanUI(false); fighterAttack(s.id, delta, s.name);
 }
 function pasteModal(){
-  showModal('<h2>Text-Code einfügen</h2><p class="small">Falls ein Kind seinen Code als Text kopiert und dir geschickt hat (z. B. per AirDrop).</p><textarea id="pasteIn" class="tinput" rows="4" placeholder="MM-…"></textarea><div class="mbtns"><button class="btn ghost" data-m="close">Abbrechen</button><button class="btn" data-m="ok">Einlesen</button></div>',
-    {on:{ok:m => { const b = textToBytes($('#pasteIn', m.el).value); if (!b){ toast('Das ist kein gültiger Text-Code.'); return; } m.close(); teacherBytes(b); }}});
+  showModal('<h2>Code eingeben</h2><p class="small">8-stelligen Code des Kindes eingeben (mehrere möglich, einer pro Zeile) oder einen langen alten Text-Code (MM-…) einfügen.</p><textarea id="pasteIn" class="tinput" rows="4" placeholder="MM-…"></textarea><div class="mbtns"><button class="btn ghost" data-m="close">Abbrechen</button><button class="btn" data-m="ok">Einlesen</button></div>',
+    {on:{ok:m => { const raw = $('#pasteIn', m.el).value; if (/(^|\s)MM-[A-Za-z0-9_-]{20,}/.test(raw)){ const b = textToBytes(raw); if (!b){ toast('Das ist kein gültiger Text-Code.'); return; } m.close(); teacherBytes(b); return; } const c = parseCodesText(raw); if (!c.length){ toast('Ich finde keinen gültigen Code.'); return; } m.close(); (async () => { for (const x of c){ await teacherCode(x); await new Promise(r => setTimeout(r, 900)); } })(); }}});
 }
 function finishScan(){
   const S = T.open, n = sessN(S);
@@ -15575,14 +15783,14 @@ function learnWarn(s){ const t = lrTotal(s); return t >= 8 && s.stats.learn / t 
 function weekCell(S, id, k, suf){ const e = S && S.scans[id]; if (!e || e[k] == null) return '<span class="small">–</span>'; const v = e[k]; return '<span class="pill ' + (k === 'days' ? (v >= 3 ? 'ok' : v === 0 ? 'miss' : '') : (v > 0 ? 'ok' : '')) + '">' + v + suf + '</span>'; }
 function classTabHTML(){
   const list = studentsList();
-  if (!list.length) return '<section class="tcard"><h3>Noch keine Kinder</h3><p>Kinder erscheinen hier automatisch, sobald ihr Code das erste Mal eingelesen wurde.</p></section>';
+  if (!list.length) return cloudKidsHTML() + '<section class="tcard"><h3>Noch keine Kinder</h3><p>Kinder erscheinen hier automatisch, sobald ihr Code das erste Mal eingelesen wurde.</p></section>';
   const lastS = T.sessions[T.sessions.length - 1];
   const rows = list.map(st => {
     const s = st.latest; const lw = !lastS ? '–' : lastS.scans[st.id] ? '<span class="pill ok">+' + lastS.scans[st.id].contrib + '</span>' : (lastS.missing || []).some(m => m.id === st.id) ? '<span class="pill miss">fehlte</span>' : '–';
     const isl = ISLANDS[frontierFor(s.stars, s.unlock)];
     return '<tr class="click" data-t="student" data-id="' + st.id + '"><td><b>' + esc(st.name) + '</b>' + learnWarn(s) + '</td><td>' + levelInfo(s.xp).level + '</td><td>' + starsCount(s) + ' / ' + (NI * 3) + '</td><td>' + masteredCount(s) + ' / ' + NP + '</td><td>🏅 ' + rowsMastered(s.fl) + ' / ' + ROWS.length + '</td><td>' + WORLDS[isl.world].title + ' · ' + isl.label + '</td><td>' + s.tc + '</td><td>' + (s.ta ? Math.round(s.tc / s.ta * 100) + ' %' : '–') + '</td><td>' + learnPct(s) + '</td><td>' + lw + '</td><td>' + weekCell(lastS, st.id, 'days', ' Tage') + '</td><td>' + weekCell(lastS, st.id, 'missions', '') + '</td><td class="small">' + fmtDate(dayToDate(s.day)) + '</td></tr>';
   }).join('');
-  return inactiveHTML(list) + '<section class="tcard"><h3>' + list.length + (list.length === 1 ? ' Kind' : ' Kinder') + '</h3><p class="small">Tippe auf ein Kind für Details. „Sicher“ = Aufgabe schnell und richtig gelöst. „Spieltage“ und „Missionen“ beziehen sich auf die Woche vor dem letzten Scan (Tage mit mindestens einer Lern-Runde bzw. erfüllte Tagesmissionen). „Reihen“ = Reihen, die komplett sicher sitzen (2er bis 10er bis × 10). „Lern-Runden“ = Anteil der Runden mit neuen oder wackeligen Aufgaben (Rest: Runden mit Aufgaben, die das Kind schon sicher kann). ⚠️ = übt überwiegend schon Gekonntes. Stand = Datum des zuletzt eingelesenen Codes.</p><div class="tablewrap"><table class="ttable"><thead><tr><th>Name</th><th>Level</th><th>Sterne</th><th>Sicher</th><th>Reihen</th><th>Gerade bei</th><th>Treffer</th><th>Richtig</th><th>Lern-Runden</th><th>Letzte Woche</th><th>Spieltage</th><th>🎯 Missionen</th><th>Stand</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+  return cloudKidsHTML() + inactiveHTML(list) + '<section class="tcard"><h3>' + list.length + (list.length === 1 ? ' Kind' : ' Kinder') + '</h3><p class="small">Tippe auf ein Kind für Details. „Sicher“ = Aufgabe schnell und richtig gelöst. „Spieltage“ und „Missionen“ beziehen sich auf die Woche vor dem letzten Scan (Tage mit mindestens einer Lern-Runde bzw. erfüllte Tagesmissionen). „Reihen“ = Reihen, die komplett sicher sitzen (2er bis 10er bis × 10). „Lern-Runden“ = Anteil der Runden mit neuen oder wackeligen Aufgaben (Rest: Runden mit Aufgaben, die das Kind schon sicher kann). ⚠️ = übt überwiegend schon Gekonntes. Stand = Datum des zuletzt eingelesenen Codes.</p><div class="tablewrap"><table class="ttable"><thead><tr><th>Name</th><th>Level</th><th>Sterne</th><th>Sicher</th><th>Reihen</th><th>Gerade bei</th><th>Treffer</th><th>Richtig</th><th>Lern-Runden</th><th>Letzte Woche</th><th>Spieltage</th><th>🎯 Missionen</th><th>Stand</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
 }
 function adaptForModal(id, shown){
   const st = T.students[id]; if (!st) return;
@@ -15642,24 +15850,74 @@ function unlockForModal(id, lv){
 }
 function studentModal(id){
   const st = T.students[id]; if (!st) return; const s = st.latest;
-  const rows = ROWS.map(n => { const f = rowFacts(n, 12), c = [0, 0, 0, 0]; f.forEach(x => c[s.fl[x]]++); const lv = rowLevelOf(s.fl, n); return '<div class="mrow"><span>' + n + '</span><div class="mbar">' + [3, 2, 1, 0].map(l => '<i class="c' + l + '" style="width:' + (c[l] / f.length * 100) + '%"></i>').join('') + '</div><em>' + (lv === 2 ? '🏅 bis ×12' : lv === 1 ? '🏅 bis ×10' : '') + '</em></div>'; });
+  const rows = OV_ROWS.map(n => { const f = rowFacts(n, 10), c = [0, 0, 0, 0]; f.forEach(x => c[s.fl[x]]++); const ans = s.fr ? f.reduce((a, x) => a + (s.fr[x] || 0) + ((s.fw && s.fw[x]) || 0), 0) : null; return '<div class="mrow"><span>' + n + '</span><div class="mbar">' + [3, 2, 1, 0].map(l => '<i class="c' + l + '" style="width:' + (c[l] / f.length * 100) + '%"></i>').join('') + '</div><em>' + (c[3] === f.length ? '🏅 sicher' : c[3] + '/' + f.length + ' sicher') + (ans != null ? ' · ' + ans + '× geübt' : '') + '</em></div>'; });
   const errs = s.errs.filter(e => e[0] < NP).map(([i, c]) => { const [a, b] = PAIRS[i]; return '<li><b>' + a + ' × ' + b + ' = ' + (a * b) + '</b><span class="small">' + c + '× falsch</span></li>'; }).join('');
   const isl = ISLANDS[frontierFor(s.stars, s.unlock)];
   showModal('<h2>' + esc(st.name) + '</h2><p class="small">Spielernummer: <b>' + fmtNumber(id) + '</b></p><p class="small">Stand vom ' + fmtDate(dayToDate(s.day)) + ' · gerade bei ' + WORLDS[isl.world].title + ', ' + isl.label + '</p>'
     + (lrTotal(s) ? '<p class="small">Lern-Runden: <b>' + s.stats.learn + '</b> · Trainings-Runden (nur schon Gekonntes): <b>' + s.stats.train + '</b>' + (learnWarn(s) ? ' · ⚠️ übt überwiegend schon Gekonntes – vielleicht auf Bonus-Inseln 🎫×2 oder die Tages-Wiederholung hinweisen.' : '') + '</p>' : '')
     + '<div class="sdgrid"><div><b>' + levelInfo(s.xp).level + '</b><span>Level</span></div><div><b>' + starsCount(s) + '</b><span>Sterne</span></div><div><b>' + masteredCount(s) + '</b><span>sichere Aufgaben</span></div><div><b>' + s.tc + '</b><span>Treffer</span></div><div><b>' + (s.ta ? Math.round(s.tc / s.ta * 100) + ' %' : '–') + '</b><span>richtig</span></div><div><b>' + s.rounds + '</b><span>Runden</span></div></div>'
-    + '<h3>Reihen (jeweils × 1 bis × 12)</h3><div class="legend"><span><i class="c3"></i>sicher</span><span><i class="c2"></i>gut</span><span><i class="c1"></i>wackelig</span><span><i class="c0"></i>noch nicht geübt</span></div>' + rows.join('')
+    + '<h3>Reihen (jeweils × 1 bis × 10)</h3><div class="legend"><span><i class="c3"></i>sicher</span><span><i class="c2"></i>gut</span><span><i class="c1"></i>wackelig</span><span><i class="c0"></i>noch nicht geübt</span></div>' + rows.join('')
     + '<h3 style="margin-top:14px">Häufigste Fehler</h3>' + (errs ? '<ul class="errlist">' + errs + '</ul>' : '<p class="small">Keine Fehler gespeichert.</p>')
     + '<div class="mbtns"><button class="btn" data-m="unlock">Welt freischalten</button><button class="btn" data-m="adapt">Anpassungen</button><button class="btn" data-m="rename">Namen ändern</button><button class="btn" data-m="restore">Spielstand wiederherstellen</button><button class="btn ghost" data-m="remove" style="color:#c62845">Aus der Liste entfernen</button><button class="btn" data-m="close">Schließen</button></div>',
     {dismissable:true, on:{adapt:m => { m.close(); adaptForModal(id); }, restore:m => { m.close(); restoreForModal(id); }, rename:m => { m.close(); renameForModal(id); }, unlock:m => { m.close(); unlockForModal(id); }, remove:m => { m.close(); confirmModal(esc(st.name) + ' entfernen?', 'Das Kind verschwindet aus der Klassenliste. Wird sein Code wieder eingelesen, erscheint es neu.', 'Entfernen', () => { delete T.students[id]; saveTeacher(); renderTeacher(); }, 'Abbrechen', true); }}});
 }
+
+const OV_ROWS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+function ovStat(fl, n){ const f = rowFacts(n, 10), c = [0, 0, 0, 0]; f.forEach(x => c[fl[x]]++); return {c, total:f.length, sure:c[3], started:c[0] < f.length}; }
+function ovClass(st){ if (!st.started) return 'ov0'; const p = st.sure / st.total; return p >= 1 ? 'ov4' : p >= .75 ? 'ov3' : p >= .4 ? 'ov2' : 'ov1'; }
+function cloudSteps(){
+  if (!cloudOn()) return [];
+  return [['Auf jedem Gerät anmelden', 'Im Spiel auf dem Startbildschirm „👩‍🏫 Lehrkraft-Login“ antippen. Klassenname und Passwort eingeben – fertig. Deine Klassendaten liegen verschlüsselt in der Cloud.'], ['Kinder-Codes', 'Jedes Kind hat einen 8-stelligen Code. Im Tab „Klasse“ trägst du die Codes ein – der Stand wird ohne Scannen geladen. Beim Wochen-Scan kannst du Codes auch per Kamera lesen oder „Alle bekannten Kinder laden“ tippen.']];
+}
+function rowsTabHTML(){
+  const list = studentsList().filter(s => s.latest);
+  if (!list.length) return cloudKidsHTML() + '<section class="tcard"><h3>Noch keine Daten</h3><p>Sobald Kinder eingelesen sind, siehst du hier, welche Zahlenreihen wie oft geübt wurden und wer was sicher kann.</p></section>';
+  const N = list.length;
+  const rows = OV_ROWS.map(n => {
+    const f = rowFacts(n, 10); const cells = [0, 0, 0, 0]; let right = 0, wrong = 0, withX = 0, kSure = 0, kHigh = 0, kWork = 0, kNone = 0, sumP = 0;
+    list.forEach(s => {
+      const st = ovStat(s.latest.fl, n); st.c.forEach((v, l) => { cells[l] += v; }); const p = st.sure / st.total; sumP += p;
+      if (!st.started) kNone++; else if (p >= 1) kSure++; else if (p >= .75) kHigh++; else kWork++;
+      if (s.latest.fr){ withX++; f.forEach(x => { right += s.latest.fr[x] || 0; wrong += (s.latest.fw && s.latest.fw[x]) || 0; }); }
+    });
+    const practiced = N - kNone, avg = sumP / N;
+    const status = avg >= .75 ? ['gut beherrscht', 'ok'] : !practiced ? ['noch nicht geübt', ''] : (practiced < N * .5 && avg < .4) ? ['kaum geübt', 'miss'] : avg >= .4 ? ['auf gutem Weg', ''] : ['wackelt noch', 'miss'];
+    return {n, f, cells, right, wrong, withX, kSure, kHigh, kWork, kNone, avg, practiced, status, ans:right + wrong};
+  });
+  const good = rows.filter(r => r.status[1] === 'ok').map(r => r.n + 'er');
+  const weak = rows.filter(r => r.avg < .75).sort((a, b) => a.avg - b.avg).slice(0, 3).map(r => r.n + 'er');
+  const anyX = rows.some(r => r.withX), byAns = rows.slice().sort((a, b) => b.ans / Math.max(1, b.withX) - a.ans / Math.max(1, a.withX));
+  const nX = Math.max.apply(null, rows.map(r => r.withX));
+  const cards = '<div class="ovcards"><div><b>' + (good.length ? good.join(', ') : '–') + '</b><span>Gut beherrscht (im Schnitt ≥ 75 % sicher)</span></div><div><b>' + (weak.length ? weak.join(', ') : 'alle sitzen') + '</b><span>Braucht am meisten Übung</span></div>'
+    + (anyX ? '<div><b>' + byAns[0].n + 'er-Reihe</b><span>Am häufigsten geübt (' + Math.round(byAns[0].ans / Math.max(1, byAns[0].withX)) + ' Antworten pro Kind)</span></div><div><b>' + byAns[byAns.length - 1].n + 'er-Reihe</b><span>Am seltensten geübt (' + Math.round(byAns[byAns.length - 1].ans / Math.max(1, byAns[byAns.length - 1].withX)) + ' Antworten pro Kind)</span></div>' : '') + '</div>';
+  const trs = rows.map(r => {
+    const tot = N * r.f.length, bar = '<div class="mbar" style="min-width:150px">' + [3, 2, 1, 0].map(l => '<i class="c' + l + '" style="width:' + (r.cells[l] / tot * 100) + '%"></i>').join('') + '</div>';
+    const acc = r.ans ? Math.round(r.right / r.ans * 100) + ' %' : '–';
+    return '<tr><td><b>' + r.n + 'er-Reihe</b></td><td>' + (r.withX ? r.ans + ' <span class="small">(Ø ' + Math.round(r.ans / r.withX) + ')</span>' : '<span class="small">–</span>') + '</td><td>' + acc + '</td><td>' + r.kSure + ' / ' + r.kHigh + ' / ' + r.kWork + ' / ' + r.kNone + '</td><td>' + bar + '</td><td><span class="pill ' + r.status[1] + '">' + r.status[0] + '</span> <span class="small">Ø ' + Math.round(r.avg * 100) + ' % sicher</span></td></tr>';
+  }).join('');
+  const matrix = list.map(s => {
+    let full = 0, sure = 0;
+    const tds = OV_ROWS.map(n => { const st = ovStat(s.latest.fl, n); sure += st.sure; if (st.sure === st.total) full++; const cls = ovClass(st), txt = !st.started ? '–' : st.sure === st.total ? '✓' : st.sure + '/' + st.total;
+      return '<td class="ov ' + cls + '" data-t="heatcell" data-i="' + esc(s.name) + ' · ' + n + 'er-Reihe: ' + st.c[3] + ' sicher, ' + st.c[2] + ' gut, ' + st.c[1] + ' wackelig, ' + st.c[0] + ' noch nicht geübt">' + txt + '</td>'; }).join('');
+    return '<tr><td class="sticky"><b>' + esc(s.name) + '</b></td>' + tds + '<td><b>' + full + '</b> / ' + OV_ROWS.length + '</td><td>' + sure + ' / ' + NP + '</td></tr>';
+  }).join('');
+  return cloudKidsHTML()
+    + '<section class="tcard"><h3>📊 Zahlenreihen der Klasse (' + N + (N === 1 ? ' Kind' : ' Kinder') + ')</h3>' + cards + '</section>'
+    + '<section class="tcard"><h3>Wie oft geübt, wie gut beherrscht?</h3><p class="small">Eine Aufgabe zählt zu beiden Reihen (3 × 4 steht in der 3er- und der 4er-Reihe). „Sicher“ heißt: schnell und richtig gelöst. Kinder: <b>sicher / fast sicher (ab 75 %) / in Arbeit / noch nicht gestartet</b>.'
+    + (anyX && nX < N ? ' Die Antwortzahlen kommen von ' + nX + ' von ' + N + ' Kindern (ältere Codes enthalten sie nicht, lade sie per Cloud-Code neu).' : '') + (!anyX ? ' Antwortzahlen gibt es nur, wenn die Kinder per 8-stelligem Cloud-Code eingelesen werden.' : '') + '</p>'
+    + '<div class="ovleg"><span><i class="c3"></i>sicher</span><span><i class="c2"></i>gut</span><span><i class="c1"></i>wackelig</span><span><i class="c0"></i>noch nicht geübt</span></div>'
+    + '<div class="tablewrap"><table class="ttable"><thead><tr><th>Reihe</th><th>Antworten (Ø pro Kind)</th><th>Richtig</th><th>Kinder: sicher / fast / in Arbeit / offen</th><th>Aufgaben der Reihe</th><th>Einschätzung</th></tr></thead><tbody>' + trs + '</tbody></table></div></section>'
+    + '<section class="tcard"><h3>Wer hat was geschafft?</h3><p class="small">Jede Zeile ist ein Kind, jede Spalte eine Zahlenreihe (× 1 bis × 10). ✓ = die ganze Reihe sitzt sicher, sonst steht da, wie viele der Aufgaben sicher sind. Tippe auf ein Feld für Details.</p>'
+    + '<div class="ovleg"><span><i class="ov4"></i>✓ alles sicher</span><span><i class="ov3"></i>ab 75 %</span><span><i class="ov2"></i>ab 40 %</span><span><i class="ov1"></i>unter 40 %</span><span><i class="ov0"></i>noch nicht geübt</span></div>'
+    + '<div class="tablewrap"><table class="ttable ovt"><thead><tr><th class="sticky">Name</th>' + OV_ROWS.map(n => '<th style="text-align:center">' + n + 'er</th>').join('') + '<th>Reihen ✓</th><th>Sicher</th></tr></thead><tbody>' + matrix + '</tbody></table></div></section>';
+}
 function errorsTabHTML(){
   const list = studentsList().filter(s => s.latest);
   if (!list.length) return '<section class="tcard"><h3>Noch keine Daten</h3><p>Nach dem ersten Wochen-Scan siehst du hier, welche Aufgaben in der Klasse sitzen und welche noch wackeln.</p></section>';
-  let cells = '<div class="hh"></div>'; for (let b = 1; b <= 12; b++) cells += '<div class="hh">' + b + '</div>';
-  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 20].forEach(a => {
+  let cells = '<div class="hh"></div>'; for (let b = 1; b <= 10; b++) cells += '<div class="hh">' + b + '</div>';
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(a => {
     cells += '<div class="hh">' + a + '</div>';
-    for (let b = 1; b <= 12; b++){
+    for (let b = 1; b <= 10; b++){
       const pi = pidx(a, b), lv = list.map(s => s.latest.fl[pi]).filter(l => l > 0);
       let cls = 'c0', title = a + ' × ' + b + ': noch nicht geübt';
       if (lv.length){ const avg = lv.reduce((x, y) => x + y, 0) / lv.length; cls = avg < 1.67 ? 'c1' : avg < 2.5 ? 'c2' : 'c3'; title = a + ' × ' + b + ' = ' + (a * b) + ': ' + lv.filter(l => l === 3).length + ' sicher, ' + lv.filter(l => l === 2).length + ' gut, ' + lv.filter(l => l === 1).length + ' wackelig (von ' + lv.length + ' Kindern, die sie geübt haben)'; }
@@ -15688,12 +15946,12 @@ function timeSectionHTML(){
 }
 function dataTabHTML(){
   const n = studentsList().length;
-  return timeSectionHTML() + '<section class="tcard"><h3>Einstellungen</h3><label>Klassenname<input id="setClass" value="' + esc(T.className) + '" autocomplete="off"></label>'
+  return timeSectionHTML() + '<section class="tcard"><h3>Einstellungen</h3><label>Klassenname<input id="setClass" value="' + esc(T.className) + '" autocomplete="off"' + (cloudOn() ? ' readonly' : '') + '></label>'
     + '<label>Anzahl Kinder in der Klasse<input id="setSize" type="number" min="1" max="60" value="' + (T.classSize || 25) + '"></label><p class="small">Wird nur genutzt, solange noch kein Wochen-Scan stattgefunden hat. Danach zählen die eingelesenen Kinder.</p>'
     + '<label>Schwierigkeit des Wochen-Bosses</label><div class="lvpick">' + Object.keys(LEVELS).map(k => '<button class="tbtn ' + (k === levelOf() ? 'primary' : '') + '" data-t="setLevel" data-l="' + k + '">' + LEVELS[k].n + ' · ' + LEVELS[k].per + '</button>').join('') + '</div><p class="small">' + Object.keys(LEVELS).map(k => '<b>' + LEVELS[k].n + ':</b> ' + LEVELS[k].per + ' Lernpunkte pro Kind (höchstens ' + (LEVELS[k].per * CAP_F) + ') – ' + LEVELS[k].d).join('<br>') + '</p>'
-    + '<label>PIN für diese Ansicht (optional)<input id="setPin" type="password" inputmode="numeric" value="' + esc(T.pin) + '" autocomplete="off"></label><div class="tbtnrow"><button class="tbtn primary" data-t="saveSettings">Speichern</button></div></section>'
+    + (cloudOn() ? '' : '<label>PIN für diese Ansicht (optional)<input id="setPin" type="password" inputmode="numeric" value="' + esc(T.pin) + '" autocomplete="off"></label>') + '<div class="tbtnrow"><button class="tbtn primary" data-t="saveSettings">Speichern</button></div></section>'
     + '<section class="tcard"><h3>Datensicherung</h3><p>Alle Klassendaten liegen nur auf diesem Gerät. Sichere sie ab und zu als Datei, z. B. in der Dateien-App.</p><div class="tbtnrow"><button class="tbtn" data-t="export">⬇️ Sicherung herunterladen</button><label class="tbtn">⬆️ Sicherung laden<input type="file" accept=".json,application/json" id="importFile" hidden></label></div></section>'
-    + '<section class="tcard"><h3>Datenschutz</h3><p class="small">Das Spiel selbst schickt keine Daten an einen Server. Der Fortschritt der Kinder bleibt auf ihren iPads, die Codes werden nur hier auf diesem Gerät ausgewertet. Im Code stehen: Name (wie vom Kind eingegeben), Spielfortschritt und die häufigsten Fehler.</p></section>'
+    + '<section class="tcard"><h3>Datenschutz</h3><p class="small">' + (cloudOn() ? 'Mit der Cloud-Funktion liegen die Spielstände der Kinder unter ihrem 8-stelligen Code in einer Online-Datenbank (Vorname bzw. Spitzname, Fortschritt, Fehlerstatistik – keine weiteren persönlichen Daten). Die Klassendaten der Lehrkraft werden mit dem Klassenpasswort verschlüsselt gespeichert. Bitte kläre den Einsatz mit eurer Schulleitung bzw. dem Datenschutz und lass die Kinder nur Vornamen oder Spitznamen verwenden.' : 'Das Spiel selbst schickt keine Daten an einen Server. Der Fortschritt der Kinder bleibt auf ihren iPads, die Codes werden nur hier auf diesem Gerät ausgewertet. Im Code stehen: Name (wie vom Kind eingegeben), Spielfortschritt und die häufigsten Fehler.') + '</p></section>'
     + '<section class="tcard"><h3>Über diese Version</h3><p class="small"><b>Version ' + APP_VERSION + ' (' + APP_BUILD + ')</b>' + (offlineReady() ? ' · Offline-Modus bereit' : '') + '<br>Verändert nach „Mal-Monster“ von Laurentius Dressel (CC BY-NC-SA 4.0): vier Welten (Mal, Geteilt, Platzhalter, Mix) mit Reihen-Inseln, Wiederholungsinseln und Endbossen, nur kleines Einmaleins, einstellbare Rundenzeit. Nur nicht-kommerziell nutzbar, Weitergabe unter gleicher Lizenz.</p></section>'
     + '<section class="tcard danger"><h3>Alles löschen</h3><p>Löscht alle Kinder, Wochen und Einstellungen auf diesem Gerät.</p><button class="tbtn danger" data-t="wipe">Alle Klassendaten löschen</button></section>';
 }
@@ -15706,11 +15964,19 @@ function importTeacher(e){
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   const r = new FileReader();
   r.onload = () => { let d; try { d = JSON.parse(r.result); } catch(err){ d = null; } if (!d || typeof d.students !== 'object' || !Array.isArray(d.sessions)){ toast('Das ist keine gültige Sicherung dieses Spiels.'); return; }
-    confirmModal('Sicherung laden?', 'Klasse „' + esc(d.className) + '“ mit ' + Object.keys(d.students).length + ' Kindern und ' + d.sessions.length + ' Wochen. Die jetzigen Daten auf diesem Gerät werden ersetzt.', 'Laden', () => { T = Object.assign(loadTeacher(), {students:{}, sessions:[], open:null}, d); saveTeacher(); tTab = 'class'; renderTeacher(); toast('Sicherung geladen ✔'); }); };
+    confirmModal('Sicherung laden?', 'Klasse „' + esc(d.className) + '“ mit ' + Object.keys(d.students).length + ' Kindern und ' + d.sessions.length + ' Wochen. Die jetzigen Daten auf diesem Gerät werden ersetzt.', 'Laden', () => { const cn = (cloudOn() && tAuth) ? T.className : d.className; T = Object.assign(defaultT(), {students:{}, sessions:[], open:null}, d, {className:cn}); saveTeacher(); tTab = 'class'; renderTeacher(); toast('Sicherung geladen ✔'); }); };
   r.readAsText(f);
 }
 function teacherAction(t, el){
   switch (t){
+    case 'showCreate': tScreen = 'create'; renderTeacher(); break;
+    case 'showLogin': tScreen = 'login'; renderTeacher(); break;
+    case 'loginDo': { const n = $('#liClass').value.trim(), p = $('#liPw').value; if (!n || !p){ toast('Bitte Klassenname und Passwort eingeben.'); return; } toast('⏳ Anmelden …'); teacherLogin(n, p); break; }
+    case 'createDo': { const n = $('#liClass').value.trim(), p = $('#liPw').value, p2 = $('#liPw2').value; if (!n){ toast('Bitte einen Klassennamen eingeben.'); return; } if (p.length < 8){ toast('Das Passwort braucht mindestens 8 Zeichen.'); return; } if (p !== p2){ toast('Die Passwörter sind nicht gleich.'); return; } const lb = $('#suLevel .tbtn.primary'); toast('⏳ Lege Klasse an …'); teacherCreate(n, p, clamp(parseInt($('#suSize').value, 10) || 25, 1, 60), lb ? lb.dataset.l : 'leicht', !!($('#takeLocal') && $('#takeLocal').checked)); break; }
+    case 'tLogout': clearCred(); T = null; tAuth = null; tScreen = 'login'; tAutoFailed = false; renderTeacher(); break;
+    case 'addCodes': addCodesModal(); break;
+    case 'refreshAll': { const c = studentsList().filter(s => s.code).map(s => s.code); if (!c.length){ toast('Noch kein Kind mit Code. Trage Codes ein oder lies Kinder einmal per Scan ein.'); return; } toast('⏳ Aktualisiere …'); fetchKids(c, 'aktualisiert'); break; }
+    case 'loadAll': loadAllKids(); break;
     case 'tab': tTab = el.dataset.tab; renderTeacher(); break;
     case 'toKids': location.hash = ''; break;
     case 'suLevel': $$('#suLevel .tbtn').forEach(b => b.classList.toggle('primary', b === el)); break;
@@ -15733,10 +15999,10 @@ function teacherAction(t, el){
     case 'exportCsv': exportClassCsv(); break;
     case 'printClass': printClass(); break;
     case 'timeQR': { setRoundSec(parseInt($('#setSec').value, 10) || 60); tTimeQR = true; renderTeacher(); toast('Rundenzeit gespeichert ✔'); break; }
-    case 'saveSettings': { const c = $('#setClass').value.trim(); if (c) T.className = c; T.classSize = clamp(parseInt($('#setSize').value, 10) || T.classSize || 25, 1, 60); T.pin = $('#setPin').value.trim(); saveTeacher(); renderTeacher(); toast('Gespeichert ✔'); break; }
+    case 'saveSettings': { const c = $('#setClass').value.trim(); if (c && !cloudOn()) T.className = c; T.classSize = clamp(parseInt($('#setSize').value, 10) || T.classSize || 25, 1, 60); if ($('#setPin')) T.pin = $('#setPin').value.trim(); saveTeacher(); renderTeacher(); toast('Gespeichert ✔'); break; }
     case 'export': exportTeacher(); break;
     case 'heatcell': toast(esc(el.dataset.i)); break;
-    case 'wipe': confirmModal('Alle Klassendaten löschen?', 'Kinder, Wochen und Einstellungen auf diesem Gerät werden gelöscht. Tipp: Vorher eine Sicherung herunterladen.', 'Löschen', () => { store.del(TKEY); T = null; tResultId = null; tTab = 'scan'; renderTeacher(); }, 'Abbrechen', true); break;
+    case 'wipe': confirmModal('Alle Klassendaten löschen?', 'Kinder, Wochen und Einstellungen auf diesem Gerät werden gelöscht. Tipp: Vorher eine Sicherung herunterladen.', 'Löschen', () => { wipeTeacher(); }, 'Abbrechen', true); break;
   }
 }
 
